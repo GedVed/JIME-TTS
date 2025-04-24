@@ -7,7 +7,9 @@ using System.Collections;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.IO;
-using JetBrains.Annotations;
+using System.Linq;
+using System.Collections.Specialized;
+
 
 
 
@@ -17,11 +19,12 @@ public class ReadText : BaseUnityPlugin
     public static ManualLogSource log; 
     public static AudioSource audioSource;
     public static string audioFolder = Path.Combine(Paths.PluginPath, "ReadTextMod\\arnorTTS"); // Folder with WAVs
-    public static Dictionary<string, AudioClip> audioClips = [];
+    
+    public static bool isPlayingQueue = false;
     public static bool hasPlayed = false;
     public static MessagePopup messagePopupComponent;
+    public static OrderedDictionary audioQueue = new OrderedDictionary();
 
-    //public static List<AudioSource> audioSources;
 
     void Awake(){
         log = Logger;
@@ -33,83 +36,91 @@ public class ReadText : BaseUnityPlugin
     }
 
     public static void PopupMessageTTS(MessagePopup __instance, UILocalizationPacket localizationText, GameObject additionalInfo = null){
-        string message;
-        string additionalMessage;
-        if(string.IsNullOrEmpty(localizationText.key)){
-            message = localizationText.KeyInfo.Key;
-        }else if(additionalInfo != null){
-            message = localizationText.key;
-            additionalMessage = localizationText.key.Replace("ATTACK", "ADDITIONAL");
-            log.LogInfo($"Enemy additional message: {additionalMessage}");
-        }else{
-            message = localizationText.key;
-        }
         
-        if (!string.IsNullOrEmpty(message)){
-            log.LogInfo($"[LOTR Message Popup - UILabel]: {message}");
+        List<string> filepaths = [];
+        
+        filepaths.Add(string.IsNullOrEmpty(localizationText.key) ? localizationText.KeyInfo.Key : localizationText.key);
+        if (!string.IsNullOrEmpty(localizationText.key) && additionalInfo != null)
+            filepaths.Add(localizationText.key.Replace("ATTACK", "ADDITIONAL"));
 
-            // Load the sound file dynamically when needed
-            string filePath = Path.Combine(audioFolder, message + ".wav");
-            if (File.Exists(filePath))
-            {
-                // Start the coroutine to load the audio file dynamically
-                __instance.StartCoroutine(LoadAndPlaySound(message, filePath));
+        if (filepaths.Count > 0){
+
+            foreach(string path in filepaths){
+
+                string filePath = Path.Combine(audioFolder, path + ".wav");
+
+                if(!audioQueue.Contains(path))
+                {
+                    if (File.Exists(filePath))
+                    {
+                        __instance.StartCoroutine(LoadAndPlayWrapper(path, filePath));
+                        hasPlayed = true;
+                    }
+                    else
+                    {
+                    log.LogError($"Audio file for '{path}' not found at '{filePath}'");
+                    } 
+                }   
             }
-            else
+        }
+    }
+    private static IEnumerator LoadSound(string fileName, string filePath){
+        UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + filePath, AudioType.WAV);
+
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.Success){
+            AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
+
+            if(!audioQueue.Contains(fileName))
             {
-                log.LogError($"Audio file for '{message}' not found at '{filePath}'");
+                audioQueue.Add(fileName, clip);
+                log.LogInfo($"File '{fileName}' added to audioQueue.");
             }
         }
         else
         {
-            log.LogError("Failed to find UILocalizationPacket in MessagePopup!");
+            log.LogError($"Failed to load audio file: {filePath}");
+            yield break;
         }
     }
-        
-    public static IEnumerator LoadAndPlaySound(string fileName, string filePath){
-        // If the clip has already been loaded, no need to load again
-        if (audioClips.ContainsKey(fileName)){
-            log.LogInfo($"Audio clip for '{fileName}' already loaded.");
-        }
-        else{
-            // Start loading the audio file asynchronously
-            UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + filePath, AudioType.WAV);
+    private static IEnumerator PlayQueueCoroutine(){
+        isPlayingQueue = true;
 
-            // Wait for the web request to complete
-            yield return www.SendWebRequest();
+        while(audioQueue.Count > 0)
+        {
 
-            if (www.result == UnityWebRequest.Result.Success){
-                // Get the AudioClip from the request
-                AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
+            DictionaryEntry entry = audioQueue.Cast<DictionaryEntry>().First();
+            AudioClip clip = entry.Value as AudioClip;
+            audioQueue.Remove(entry.Key);
 
-                // Add the successfully loaded clip to the dictionary
-                audioClips[fileName] = clip;
-                log.LogInfo($"File '{fileName}' added to dictionary.");
-            }
-            else{
-                log.LogError($"Failed to load audio file: {fileName}");
-                yield break;
-            }
-        }
-
-        // Play the sound (assuming the sound is loaded)
-        if (audioClips.ContainsKey(fileName)){
-            AudioClip clip = audioClips[fileName];
-
-            if (audioSource == null){
+            if (audioSource == null)
+            {
                 GameObject audioObj = new GameObject("SoundPlayer");
                 audioSource = audioObj.AddComponent<AudioSource>();
                 log.LogInfo("AudioSource was null");
             }
+
             audioSource.clip = clip;
             audioSource.Play();
-            hasPlayed = true;
-            log.LogInfo($"Playing sound for '{fileName}'.");
+
+            yield return new WaitWhile(() => audioSource.isPlaying);
+
         }
-        else{
-            log.LogError($"Audio clip for '{fileName}' not found after loading.");
+        isPlayingQueue = false;
+    }
+
+    private static IEnumerator LoadAndPlayWrapper(string path, string filePath)
+    {
+        yield return LoadSound(path, filePath);
+    
+        if (!isPlayingQueue && audioQueue.Contains(path)) // Optional: only start if not already playing
+        {
+            yield return PlayQueueCoroutine();
+            hasPlayed = true;
         }
     }
+
 }
 
 [HarmonyPatch(typeof(UIPanel), "LateUpdate")]
@@ -120,30 +131,43 @@ public class LateUpdate(){
         GameObject messagePopupObject = GameObject.Find("MessagePopup");
         GameObject messagePopupEnemy = GameObject.Find("MessagePopup_EnemyActivation");
         GameObject additionalInfo = null;
-        if(messagePopupObject != null){
+
+        if(messagePopupObject != null)
+        {
             ReadText.messagePopupComponent = (MessagePopup)messagePopupObject.GetComponentByName("MessagePopup");
-        }else if(messagePopupEnemy != null){
+        }
+        else if(messagePopupEnemy != null)
+        {
             ReadText.messagePopupComponent = (MessagePopup)messagePopupEnemy.GetComponentByName("MessagePopup");
             additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
-        }else{
+        }
+        else
+        {
             ReadText.hasPlayed = false;
         }
 
-        if(ReadText.messagePopupComponent != null && !ReadText.hasPlayed && ReadText.messagePopupComponent.IsShowingMessage && ReadText.messagePopupComponent.isActiveAndEnabled){
-                    UILocalizationPacket localizedText = Traverse.Create(ReadText.messagePopupComponent).Field("_localizedText").GetValue<UILocalizationPacket>();
-                    if(additionalInfo != null){
-                        ReadText.log.LogInfo($"Additional Effect found");
-                        ReadText.PopupMessageTTS(ReadText.messagePopupComponent, localizedText, additionalInfo);
-                    }else{
-                        ReadText.PopupMessageTTS(ReadText.messagePopupComponent, localizedText);
-                    }
+        if(ReadText.messagePopupComponent != null && !ReadText.hasPlayed && ReadText.messagePopupComponent.IsShowingMessage && ReadText.messagePopupComponent.isActiveAndEnabled)
+        {
+            UILocalizationPacket localizedText = Traverse.Create(ReadText.messagePopupComponent).Field("_localizedText").GetValue<UILocalizationPacket>();
+            if(additionalInfo != null)
+            {
+                ReadText.log.LogInfo($"Additional Effect found");
+                ReadText.PopupMessageTTS(ReadText.messagePopupComponent, localizedText, additionalInfo);
+            }
+            else
+            {
+                ReadText.PopupMessageTTS(ReadText.messagePopupComponent, localizedText);
+            }
                     
         }
 
-        if(ReadText.audioSource != null && ReadText.audioSource.isPlaying && messagePopupObject == null && messagePopupEnemy == null){
+        if(ReadText.audioSource != null && ReadText.audioSource.isPlaying && messagePopupObject == null && messagePopupEnemy == null)
+        {
                 ReadText.audioSource.Stop();
-                ReadText.log.LogInfo("Audio clip stopped");
-            }
+                ReadText.audioQueue.Clear();
+                ReadText.isPlayingQueue = false; 
+                ReadText.log.LogInfo("Audio queue playback stopped");
+        }
     }
 }
 
