@@ -7,6 +7,7 @@ using System.Collections;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.IO;
+using JetBrains.Annotations;
 
 
 
@@ -31,10 +32,15 @@ public class ReadText : BaseUnityPlugin
         log.LogInfo("ReadTextMod Loaded!");
     }
 
-    public static void PopupMessageTTS(MessagePopup __instance, UILocalizationPacket localizationText){
+    public static void PopupMessageTTS(MessagePopup __instance, UILocalizationPacket localizationText, GameObject additionalInfo = null){
         string message;
+        string additionalMessage;
         if(string.IsNullOrEmpty(localizationText.key)){
             message = localizationText.KeyInfo.Key;
+        }else if(additionalInfo != null){
+            message = localizationText.key;
+            additionalMessage = localizationText.key.Replace("ATTACK", "ADDITIONAL");
+            log.LogInfo($"Enemy additional message: {additionalMessage}");
         }else{
             message = localizationText.key;
         }
@@ -113,19 +119,25 @@ public class LateUpdate(){
 
         GameObject messagePopupObject = GameObject.Find("MessagePopup");
         GameObject messagePopupEnemy = GameObject.Find("MessagePopup_EnemyActivation");
-        
+        GameObject additionalInfo = null;
         if(messagePopupObject != null){
             ReadText.messagePopupComponent = (MessagePopup)messagePopupObject.GetComponentByName("MessagePopup");
         }else if(messagePopupEnemy != null){
             ReadText.messagePopupComponent = (MessagePopup)messagePopupEnemy.GetComponentByName("MessagePopup");
-            GameObject additionalInfo = GameObject.Find("Table_AdditionalInfo");
+            additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
         }else{
             ReadText.hasPlayed = false;
         }
 
         if(ReadText.messagePopupComponent != null && !ReadText.hasPlayed && ReadText.messagePopupComponent.IsShowingMessage && ReadText.messagePopupComponent.isActiveAndEnabled){
-                    UILocalizationPacket localizedText = Traverse.Create(ReadText.messagePopupComponent).Field("_localizedText").GetValue<UILocalizationPacket>();  
-                    ReadText.PopupMessageTTS(ReadText.messagePopupComponent, localizedText);
+                    UILocalizationPacket localizedText = Traverse.Create(ReadText.messagePopupComponent).Field("_localizedText").GetValue<UILocalizationPacket>();
+                    if(additionalInfo != null){
+                        ReadText.log.LogInfo($"Additional Effect found");
+                        ReadText.PopupMessageTTS(ReadText.messagePopupComponent, localizedText, additionalInfo);
+                    }else{
+                        ReadText.PopupMessageTTS(ReadText.messagePopupComponent, localizedText);
+                    }
+                    
         }
 
         if(ReadText.audioSource != null && ReadText.audioSource.isPlaying && messagePopupObject == null && messagePopupEnemy == null){

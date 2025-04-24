@@ -1,6 +1,7 @@
 # Binaries
 /bin/
 /obj/
+/tests/obj
 /*.dll
 /*.exe
 /*.pdb
