@@ -1,0 +1,46 @@
+# Binaries
+/bin/
+/obj/
+/*.dll
+/*.exe
+/*.pdb
+
+# Unity generated folders
+/Library/
+/Temp/
+/Logs/
+/Build/
+/UserSettings/
+/MemoryCaptures/
+/ProjectSettings/EditorBuildSettings.asset
+
+# Rider
+.idea/
+/*.sln.iml
+
+# VSCode
+.vscode/
+
+# Visual Studio
+*.user
+*.suo
+*.userprefs
+*.csproj.user
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+.nuget/
+/packages/
+
+# Logs
+*.log
+
+# Others
+*.bak
+*.tmp
+
+# Exclude personal dev paths
+Directory.Build.props
