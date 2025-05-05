@@ -53,6 +53,7 @@ namespace ReadTextMod{
 
         public static void PopupMessageTTS(MessagePopup __instance, GameObject AdditionalInfoAttack = null){
             
+
             UILocalizationPacket packet = Traverse.Create(__instance).Field("_localizedText").GetValue<UILocalizationPacket>();
             List<string> filepaths = EncounterHelpers.KeyInfoResolver(packet, AdditionalInfoAttack);
 
@@ -167,11 +168,13 @@ public class LateUpdate(){
             if(MessagePopupObject != null)
             {
                 ReadText.MessagePopupComponent = (MessagePopup)MessagePopupObject.GetComponentByName("MessagePopup");
+                
             }
             else if(MessagePopupEnemy != null)
             {
                 ReadText.MessagePopupComponent = (MessagePopup)MessagePopupEnemy.GetComponentByName("MessagePopup");
                 AdditionalInfoAttack = GameObject.Find("Label_Attack_AdditionalEffect");
+                
             }
             else if(MessagePopupEnemy != null && MessagePopupObject != null){
                 ReadText.Log.LogInfo("Both messeges active");

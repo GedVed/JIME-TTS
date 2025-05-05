@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
+using System.Text;
+using System.Text.Json;
+
 
 
 namespace ReadTextMod
@@ -9,18 +11,49 @@ namespace ReadTextMod
 
     public static class EncounterHelpers{
 
+        [System.Serializable]
+        private class LocalizationTextData
+        {
+                public string LocalizationKey;
+                public string LocalizationKeyInfoKey;
+                public string CompressedValue;
+        }
+
         private static void RemoveBracket(List<string> strings){
             if(strings.Contains("0]")){
                 strings.Remove("0]");
             }
         }
 
-        public static List<string>KeyInfoResolver(UILocalizationPacket localizationText, GameObject AdditionalInfoAttack = null){
-
-            
+        public static List<string>KeyInfoResolver(UILocalizationPacket localizationText, GameObject MessagePopupObject, GameObject AdditionalInfoAttack = null){
+            ReadText.Log.LogInfo($"{ConvertLocalizationDataToBytes(localizationText)}");
 
             List<string> filepaths = [];
 
+            /*
+            switch (MessagePopupObject.name)
+            {
+                case "MessagePopup_New":
+
+                    if(localizationText.KeyInfo.Key == "UI_LAST_STAND_HERO_CONFIRMATION" && string.IsNullOrEmpty(localizationText.key))
+                    {
+                        filepaths = ValueCleaner(localizationText).Where(text => text.StartsWith("UI_LAST_STAND") || text.StartsWith("HERO_")).ToList();
+                    }else if(localizationText.KeyInfo.Key == "UI_LAST_STAND_HERO_CONFIRMATION" && !string.IsNullOrEmpty(localizationText.key))
+                    {
+                        filepaths.Add(localizationText.key);
+
+                    }else if(localizationText.key == "UI_CHOOSE_LAST_STAND" && !string.IsNullOrEmpty(localizationText.KeyInfo.Key))
+                    {   
+                        
+                    }
+                    break;
+
+                default:
+                    break;
+
+            }*/
+
+            
             
             if(localizationText.key != "" && localizationText.KeyInfo.Key != "")
             {
@@ -135,11 +168,36 @@ namespace ReadTextMod
                 
                 return filepaths;
         }
-    
-    
-    
-    
-    
-    
+
+        private static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
+            if(localizationPacket != null){
+                var textPart = localizationPacket.KeyInfo.CompressedValue.Trim('[', ']').Split('|').Where(p => !int.TryParse(p, out _)).Select(p => p.Trim());
+                return textPart;
+            }else{
+                ReadText.Log.LogInfo("Compressed value does not exists or is mismatched");
+                return null;
+            }
+            
+        }
+
+        public static string ConvertLocalizationDataToBytes(UILocalizationPacket localizationPacket)
+        {
+            if (localizationPacket == null)
+            {
+                ReadText.Log.LogError("LocalizationPacket is null!");
+                return null;
+            }
+
+            LocalizationTextData localizationData = new LocalizationTextData
+            {
+                LocalizationKey = localizationPacket.key,
+                LocalizationKeyInfoKey = localizationPacket.KeyInfo.Key,
+                CompressedValue = localizationPacket.KeyInfo.CompressedValue
+            };
+            string serialized = JsonSerializer.Serialize(localizationData);
+           // return Encoding.UTF8.GetBytes(serialized);
+            return serialized;
+            
+        }
     }
 }

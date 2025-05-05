@@ -20,6 +20,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.48" IncludeAssets="compile" />
+    <PackageReference Include="System.Text.Json" Version="5.0.0.0" />
     <Reference Include="Assembly-CSharp">
       <HintPath>$(AssemblyCSharpPath)\Assembly-CSharp.dll</HintPath>
     </Reference>
