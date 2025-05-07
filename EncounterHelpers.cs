@@ -2,19 +2,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
-
 using UnityEngine;
 using System.Security.Cryptography;
 using System;
+using ReadTextMod;
 
-
-
-namespace ReadTextMod
-{
 
     public static class EncounterHelpers{
 
-        [System.Serializable]
+        [Serializable]
         private class LocalizationTextData
         {
                 public string LocalizationKey;
@@ -238,4 +234,4 @@ namespace ReadTextMod
         }
 
     }
-}
+

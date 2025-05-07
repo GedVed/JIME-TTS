@@ -11,11 +11,7 @@ using System.Linq;
 using System.Collections.Specialized;
 using System;
 using ReadTextMod;
-using UnityEngine.TextCore;
-
-
-
-
+using UnityEngine.SceneManagement;
 
 
 
@@ -27,7 +23,8 @@ namespace ReadTextMod{
     {
         public static ManualLogSource Log; 
         public static AudioSource AudioSource;
-        public static string AudioFolder = Path.Combine(Paths.PluginPath, "ReadTextMod\\TTS"); // Folder with WAVs
+        private bool SceneLoadPatchTriggered = false;
+        public static string AudioFolder = Path.Combine(Paths.PluginPath, "ReadTextMod\\TTS");
         public static bool IsPlayingQueue = false;
         public static bool HasPlayed = false;
         public static bool HasStartedLoading = false;
@@ -35,20 +32,37 @@ namespace ReadTextMod{
         public static OrderedDictionary AudioQueue = [];
         private static CampaignData CampaignData;
         public static string PreviousMessageHash = "garbage";
-        
-        
 
-
+        public static MethodResolver MethodResolver = null;
+        
         void Awake(){
+            var harmony = new Harmony("GedVed.lotr.readtext");
             Log = Logger;
+            MethodResolver = new MethodResolver(harmony, this);
             GameObject audioObj = new GameObject("SoundPlayer");
             AudioSource = audioObj.AddComponent<AudioSource>();
-            var harmony = new Harmony("GedVed.lotr.readtext");
+            MethodResolver.Initialize();
             harmony.PatchAll(); 
+            SceneManager.sceneLoaded += OnSceneLoaded;
             Log.LogInfo("ReadTextMod Loaded!");
         }
 
-        
+        private void OnDestroy(){
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+       
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (SceneLoadPatchTriggered)
+            {
+                Log.LogInfo($"Scene loaded: {scene.name}. Skipping patch attempt as it was already triggered.");
+                return;
+            }
+
+            Log.LogInfo($"Scene loaded: {scene.name}. Checking for MessagePopup GameObjects.");
+            SceneLoadPatchTriggered = true;
+            MethodResolver.TryPatchMethodsNow();
+        }
 
         public static void PopupMessageTTS(MessagePopup __instance, GameObject AdditionalInfoAttack = null){
             
@@ -118,7 +132,6 @@ namespace ReadTextMod{
             }
         }
     
-
         private static IEnumerator PlayQueue()
         {
             IsPlayingQueue = true;
@@ -240,4 +253,5 @@ public class LateUpdate(){
 
     }
 }
+
 
