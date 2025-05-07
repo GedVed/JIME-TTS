@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
+
 using UnityEngine;
-using System.Text;
-using System.Text.Json;
+using System.Security.Cryptography;
+using System;
 
 
 
@@ -26,7 +29,7 @@ namespace ReadTextMod
         }
 
         public static List<string>KeyInfoResolver(UILocalizationPacket localizationText, GameObject MessagePopupObject, GameObject AdditionalInfoAttack = null){
-            ReadText.Log.LogInfo($"{ConvertLocalizationDataToBytes(localizationText)}");
+            ReadText.Log.LogInfo($"Hash code: {ComputeHash(ConvertLocalizationDataToBytes(localizationText))}");
 
             List<string> filepaths = [];
 
@@ -169,7 +172,7 @@ namespace ReadTextMod
                 return filepaths;
         }
 
-        private static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
+        public static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
             if(localizationPacket != null){
                 var textPart = localizationPacket.KeyInfo.CompressedValue.Trim('[', ']').Split('|').Where(p => !int.TryParse(p, out _)).Select(p => p.Trim());
                 return textPart;
@@ -180,7 +183,7 @@ namespace ReadTextMod
             
         }
 
-        public static string ConvertLocalizationDataToBytes(UILocalizationPacket localizationPacket)
+        private static byte[] ConvertLocalizationDataToBytes(UILocalizationPacket localizationPacket)
         {
             if (localizationPacket == null)
             {
@@ -194,10 +197,45 @@ namespace ReadTextMod
                 LocalizationKeyInfoKey = localizationPacket.KeyInfo.Key,
                 CompressedValue = localizationPacket.KeyInfo.CompressedValue
             };
-            string serialized = JsonSerializer.Serialize(localizationData);
-           // return Encoding.UTF8.GetBytes(serialized);
-            return serialized;
-            
+
+            BinaryFormatter formatter = new BinaryFormatter();
+            using(MemoryStream stream = new MemoryStream()){
+                formatter.Serialize(stream, localizationData);
+                return stream.ToArray();
+            }    
         }
+
+        private static string ComputeHash(byte [] bytes){
+            if(bytes == null) return null;
+
+            using(MD5 md5 = MD5.Create()){
+                byte[] hash = md5.ComputeHash(bytes);
+                return BitConverter.ToString(hash).Replace("-","").ToLower();
+            }
+        }
+
+
+        public static string ComputeMessageHash(UILocalizationPacket packet){
+
+            if(packet != null)
+            {
+                return ComputeHash(ConvertLocalizationDataToBytes(packet));
+            }else
+            {
+                return null;
+            }
+        }
+        public static bool CheckHash(UILocalizationPacket NewPacket, string OldPacket){
+
+            if(ComputeHash(ConvertLocalizationDataToBytes(NewPacket)) != OldPacket)
+            {
+                return true;
+            }else
+            {
+                return false;
+            }
+
+        }
+
     }
 }

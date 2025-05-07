@@ -34,9 +34,8 @@ namespace ReadTextMod{
         public static MessagePopup MessagePopupComponent;
         public static OrderedDictionary AudioQueue = [];
         private static CampaignData CampaignData;
-
-        public static string PreviousKeyInfo;
-        public static string PreviousKey;
+        public static string PreviousMessageHash = "garbage";
+        
         
 
 
@@ -55,16 +54,25 @@ namespace ReadTextMod{
             
 
             UILocalizationPacket packet = Traverse.Create(__instance).Field("_localizedText").GetValue<UILocalizationPacket>();
-            List<string> filepaths = EncounterHelpers.KeyInfoResolver(packet, AdditionalInfoAttack);
 
-            //string[] inserts = Traverse.Create(localizationText.KeyInfo).Field("s_localizedInserts").GetValue<string[]>();
-            
-            if (filepaths.Count > 0){
-                __instance.StartCoroutine(LoadAndPlayWrapper(filepaths));
-            }else
-            {
-                Log.LogInfo("Unable to extract path from KeyInfo");
+            if(EncounterHelpers.CheckHash(packet, PreviousMessageHash)){
+                Log.LogInfo("Diffrent hash detected, playing sound)");
+                PreviousMessageHash = EncounterHelpers.ComputeMessageHash(packet);
+                HasPlayed = false;
+                List<string> filepaths = EncounterHelpers.KeyInfoResolver(packet, AdditionalInfoAttack);
+
+                //string[] inserts = Traverse.Create(localizationText.KeyInfo).Field("s_localizedInserts").GetValue<string[]>();
+
+                if (filepaths.Count > 0)
+                {
+                    __instance.StartCoroutine(LoadAndPlayWrapper(filepaths));
+                }else
+                {
+                    Log.LogInfo("Unable to extract path from KeyInfo");
+                }
             }
+
+            
                 
         }
 
@@ -145,8 +153,6 @@ namespace ReadTextMod{
             if (!IsPlayingQueue && AudioQueue.Count > 0 && HasPlayed == false)
             {
                 yield return PlayQueue();
-                
-                
             }
         }
     
@@ -182,16 +188,18 @@ public class LateUpdate(){
             else if(MessagePopupNew != null)
             {
                 ReadText.MessagePopupComponent = (MessagePopup)MessagePopupNew.GetComponentByName("MessagePopup");
+                
             }
             else
             {
                 ReadText.HasPlayed = false;
                 ReadText.HasStartedLoading = false;
+                
             }
 
             if(ReadText.MessagePopupComponent != null && !ReadText.HasPlayed && ReadText.MessagePopupComponent.IsShowingMessage && ReadText.MessagePopupComponent.isActiveAndEnabled)
             {
-
+                    
                 
                 if(AdditionalInfoAttack != null)
                 {
@@ -200,14 +208,15 @@ public class LateUpdate(){
                     ReadText.HasStartedLoading = true;
                     
                     
+                    
                 }
                 else
                 {
                     ReadText.PopupMessageTTS(ReadText.MessagePopupComponent);
                     ReadText.HasStartedLoading = true;
+                   
                     
-                    
-                
+            
                 }      
             }
         }
