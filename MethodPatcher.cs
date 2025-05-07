@@ -5,15 +5,15 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using System.Collections;
-using FFG.Common;
 using ReadTextMod;
+using FFG.Common;
+using UnityEngine.Bindings;
 
 
-    public class MethodResolver
+public class MethodResolver
     {
-
-
-
+        public event EventHandler<MessagePopupMethodExecutedEventArgs> MessagePopupMethodExecuted;
+        public event EventHandler<MessagePopupCloseExecutedEventArgs> MessagePopupCloseExecuted;
         private static readonly string[] TargetGameObjectNames = new string[] 
         { 
             "MessagePopup_New", 
@@ -29,40 +29,30 @@ using ReadTextMod;
             "ShowChallengeMessage",
             "ShowAdditionalInformationMessage",
             "ShowPlayerSelectMessage",
-            "ShowHighlightSelectMessage" 
+            "ShowHighlightSelectMessage",
+            "ClearCallbacks"
         }; 
         private static readonly float PatchTimeout = 30f; // Timeout after 30 seconds
 
         // State
-        private readonly Harmony _harmony;
-        private readonly MonoBehaviour _MonoBehaviour; // For coroutine
-        private readonly Dictionary<string, bool> _methodExecutionStatus = new Dictionary<string, bool>(); // Tracks if executed
-        private readonly Dictionary<string, bool> _lastLoggedStatus = new Dictionary<string, bool>(); // Tracks last logged status
-        private readonly Dictionary<string, int> _executionCount = new Dictionary<string, int>(); // Counts executions
-        private readonly Dictionary<MethodInfo, string> _methodNameMap = new Dictionary<MethodInfo, string>(); // Maps MethodInfo to methodName
-        private readonly List<string> _patchedMethods = new List<string>(); // Tracks successfully patched methods
+        private readonly Harmony Harmony;
+        private readonly MonoBehaviour MonoBehaviour; // For coroutine
+        private readonly Dictionary<MethodInfo, string> MethodNameMap = new Dictionary<MethodInfo, string>(); // Maps MethodInfo to methodName
+        private readonly List<string> PatchedMethods = new List<string>(); // Tracks successfully patched methods
         private bool IsPatched = false; // Prevents re-patching
         private GameObject LastFoundGameObject; // Store for test invocation
 
         public MethodResolver(Harmony harmony, MonoBehaviour monoBehaviour)
         {
-            _harmony = harmony ?? throw new ArgumentNullException(nameof(harmony));
-            _MonoBehaviour = monoBehaviour ?? throw new ArgumentNullException(nameof(monoBehaviour));
+            Harmony = harmony ?? throw new ArgumentNullException(nameof(harmony));
+            MonoBehaviour = monoBehaviour ?? throw new ArgumentNullException(nameof(monoBehaviour));
             ReadText.Log.LogInfo("MethodResolver instance created.");
         }
 
         public void Initialize()
         {
-            // Initialize dictionaries for each method
-            foreach (var methodName in TargetMethodNames)
-            {
-                _methodExecutionStatus[methodName] = false;
-                _lastLoggedStatus[methodName] = true; // Set to true to match previous behavior
-                _executionCount[methodName] = 0;
-            }
-
             // Start coroutine to try patching
-            _MonoBehaviour.StartCoroutine(TryPatchMethods());
+            MonoBehaviour.StartCoroutine(TryPatchMethods());
         }
 
         // Coroutine to retry patching until any GameObject is found or timeout
@@ -99,8 +89,6 @@ using ReadTextMod;
                 return true;
             }
 
-            ReadText.Log.LogInfo("Attempting to find MessagePopup GameObjects for patching...");
-
             // Find all GameObjects, including inactive ones
             GameObject[] allGameObjects = Resources.FindObjectsOfTypeAll<GameObject>();
             foreach (var gameObjectName in TargetGameObjectNames)
@@ -116,7 +104,6 @@ using ReadTextMod;
                 }
             }
 
-            ReadText.Log.LogInfo($"No target GameObjects ({string.Join(", ", TargetGameObjectNames)}) found in this attempt.");
             return false;
         }
 
@@ -154,7 +141,6 @@ using ReadTextMod;
                 return;
             }
 
-            ReadText.Log.LogInfo($"Patching methods in {componentType.Name} on {targetObject.name}...");
             int successfulPatches = 0;
             foreach (var methodName in TargetMethodNames)
             {
@@ -164,79 +150,165 @@ using ReadTextMod;
                     ReadText.Log.LogWarning($"Method {methodName} not found in {componentType.Name}.");
                     continue;
                 }
-
-                try
-                {
-                    ReadText.Log.LogInfo($"Attempting to patch: {componentType.Name}.{methodName}({string.Join(", ", targetMethod.GetParameters().Select(p => p.ParameterType.Name))})");
-                    _methodNameMap[targetMethod] = methodName;
-                    var prefix = new HarmonyMethod(
-                        typeof(MethodResolver).GetMethod(nameof(Prefix), BindingFlags.Static | BindingFlags.NonPublic)
-                    );
-                    _harmony.Patch(targetMethod, prefix: prefix);
-                    ReadText.Log.LogInfo($"Patch applied for {methodName}. Prefix method: {prefix.method.Name}");
-
-                    // Verify patch using Harmony.GetPatchInfo
-                    var patchInfo = Harmony.GetPatchInfo(targetMethod);
-                    if (patchInfo?.Prefixes?.Any(p => p.owner == _harmony.Id) == true)
+                if(methodName == "ClearCallbacks"){
+                    try
                     {
-                        _patchedMethods.Add(methodName);
-                        successfulPatches++;
-                        ReadText.Log.LogInfo($"Successfully patched method {methodName} in {componentType.Name}.");
+                        
+                        MethodNameMap[targetMethod] = methodName;
+                        var prefix = new HarmonyMethod(
+                            typeof(MethodResolver).GetMethod(nameof(Prefix), BindingFlags.Static | BindingFlags.NonPublic)
+                        );
+                        Harmony.Patch(targetMethod, prefix: prefix);
+                
+                        // Verify patch using Harmony.GetPatchInfo
+                        var patchInfo = Harmony.GetPatchInfo(targetMethod);
+                        if (patchInfo?.Prefixes?.Any(p => p.owner == Harmony.Id) == true)
+                        {
+                            PatchedMethods.Add(methodName);
+                            successfulPatches++;
+                            ReadText.Log.LogInfo($"Successfully patched method {methodName} in {componentType.Name}.");
+                        }
+                        else
+                        {
+                            ReadText.Log.LogError($"Failed to verify patch for method {methodName} in {componentType.Name}.");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        ReadText.Log.LogError($"Failed to verify patch for method {methodName} in {componentType.Name}.");
+                        ReadText.Log.LogError($"Exception while patching method {methodName}: {ex.Message}");
                     }
-                }
-                catch (Exception ex)
+                }else
                 {
-                    ReadText.Log.LogError($"Exception while patching method {methodName}: {ex.Message}");
+                    try
+                        {
+            
+                        MethodNameMap[targetMethod] = methodName;
+                        var postfix = new HarmonyMethod(
+                            typeof(MethodResolver).GetMethod(nameof(Postfix), BindingFlags.Static | BindingFlags.NonPublic)
+                        );
+                        Harmony.Patch(targetMethod, postfix: postfix);
+                
+                        // Verify patch using Harmony.GetPatchInfo
+                        var patchInfo = Harmony.GetPatchInfo(targetMethod);
+                        if (patchInfo?.Postfixes?.Any(p => p.owner == Harmony.Id) == true)
+                        {
+                            PatchedMethods.Add(methodName);
+                            successfulPatches++;
+                            ReadText.Log.LogInfo($"Successfully patched method {methodName} in {componentType.Name}.");
+                        }
+                        else
+                        {
+                            ReadText.Log.LogError($"Failed to verify patch for method {methodName} in {componentType.Name}.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ReadText.Log.LogError($"Exception while patching method {methodName}: {ex.Message}");
+                    }
                 }
             }
-
+            
             ReadText.Log.LogInfo($"Patching completed: {successfulPatches}/{TargetMethodNames.Count} methods patched successfully.");
         }
 
         
 
-        // Prefix for target methods to track execution
-        private static void Prefix(MethodInfo __originalMethod, object __instance)
+        // Postfix for target methods to track execution
+        private static void Postfix(MethodInfo __originalMethod, object __instance)
         {
             MethodResolver resolver = ReadText.MethodResolver;
             if (resolver == null)
             {
-                Debug.LogWarning($"Prefix: MethodResolver instance not found for method {__originalMethod.DeclaringType.Name}.{__originalMethod.Name}.");
+                Debug.LogWarning($"Postfix: MethodResolver instance not found for method {__originalMethod.DeclaringType.Name}.{__originalMethod.Name}.");
                 return;
             }
-
-           ReadText.Log.LogInfo($"Prefix called for method: {__originalMethod.DeclaringType.Name}.{__originalMethod.Name}");
-
-            if (resolver._methodNameMap.TryGetValue(__originalMethod, out string methodName))
+            
+            if (resolver.MethodNameMap.TryGetValue(__originalMethod, out string methodName))
             {
-                resolver._methodExecutionStatus[methodName] = true;
-                resolver._executionCount[methodName]++;
-                bool wasLogged = resolver._lastLoggedStatus[methodName];
+                GameObject gameObject = null;
+                bool isActive = false;
+                MessagePopup instance = null;
 
-                if (__instance is Component component && component.gameObject != null)
+                if (__instance is MessagePopup messagePopup && messagePopup.gameObject != null)
                 {
-                    ReadText.Log.LogInfo($"Method {methodName} executed on {component.gameObject.name} (Count: {resolver._executionCount[methodName]}), Active: {component.gameObject.activeInHierarchy}, Scene: {component.gameObject.scene.name}");
-                }
-                else
-                {
-                    ReadText.Log.LogInfo($"Method {methodName} executed (Count: {resolver._executionCount[methodName]}), but instance details unavailable. Instance type: {__instance?.GetType().Name ?? "null"}");
+                    gameObject = messagePopup.gameObject;
+                    isActive = gameObject.activeInHierarchy;
+                    instance = messagePopup;
                 }
 
-                if (!wasLogged)
-                {
-                    ReadText.Log.LogInfo($"Method {methodName} has been executed for the first time (Count: {resolver._executionCount[methodName]}).");
-                    resolver._lastLoggedStatus[methodName] = true;
-                }
+                // Raise the event
+                resolver.MessagePopupMethodExecuted?.Invoke(resolver, new MessagePopupMethodExecutedEventArgs(
+                    methodName,
+                    gameObject,
+                    isActive,
+                    instance
+                ));
+
+                ReadText.Log.LogInfo($"Event invoked for {methodName}. Handlers: {resolver.MessagePopupMethodExecuted?.GetInvocationList().Length ?? 0}");
             }
             else
             {
-                ReadText.Log.LogInfo($"Method {__originalMethod.DeclaringType.Name}.{__originalMethod.Name} executed but not found in methodName map.");
+                ReadText.Log.LogWarning($"Method {__originalMethod.DeclaringType.Name}.{__originalMethod.Name} executed but not found in methodName map.");
+            }
+        }
+
+        private static void Prefix(MethodInfo __originalMethod, object __instance){
+            MethodResolver resolver = ReadText.MethodResolver;
+            if (resolver == null)
+            {
+                Debug.LogWarning($"Postfix: MethodResolver instance not found for method {__originalMethod.DeclaringType.Name}.{__originalMethod.Name}.");
+                return;
+            }
+            if (resolver.MethodNameMap.TryGetValue(__originalMethod, out string methodName))
+            {
+                GameObject gameObject = null;
+                bool isActive = false;
+                MessagePopup instance = null;
+
+                if (__instance is MessagePopup messagePopup && messagePopup.gameObject != null)
+                {
+                    gameObject = messagePopup.gameObject;
+                    isActive = gameObject.activeInHierarchy;
+                    instance = messagePopup;
+                }
+
+                // Raise the event
+                resolver.MessagePopupCloseExecuted?.Invoke(resolver, new MessagePopupCloseExecutedEventArgs(
+                    isActive,
+                    instance
+                ));
+
+                ReadText.Log.LogInfo($"Event invoked for {methodName}. Handlers: {resolver.MessagePopupCloseExecuted?.GetInvocationList().Length ?? 0}");
+            }
+            else
+            {
+                ReadText.Log.LogWarning($"Method {__originalMethod.DeclaringType.Name}.{__originalMethod.Name} executed but not found in methodName map.");
             }
         }
 }
 
 
+    public class MessagePopupMethodExecutedEventArgs : EventArgs
+    {
+        public string MethodName { get; }
+        public GameObject GameObject { get; }
+        public bool IsActive { get; }
+        
+        public MessagePopup Instance { get; }
+        public MessagePopupMethodExecutedEventArgs(string methodName, GameObject gameObject, bool isActive, MessagePopup instance)
+        {
+            MethodName = methodName;
+            GameObject = gameObject;
+            IsActive = isActive;
+            Instance = instance;
+        }
+    }
+    public class MessagePopupCloseExecutedEventArgs : EventArgs
+    {
+        public bool IsActive { get; }
+        public MessagePopup Instance { get; }
+        public MessagePopupCloseExecutedEventArgs(bool isActive, MessagePopup instance){
+            IsActive = isActive;
+            Instance = instance;
+        }
+    }

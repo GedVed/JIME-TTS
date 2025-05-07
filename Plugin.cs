@@ -9,8 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Collections.Specialized;
-using System;
-using ReadTextMod;
 using UnityEngine.SceneManagement;
 
 
@@ -22,17 +20,12 @@ namespace ReadTextMod{
     public class ReadText : BaseUnityPlugin
     {
         public static ManualLogSource Log; 
-        public static AudioSource AudioSource;
+        private static AudioSource AudioSource;
         private bool SceneLoadPatchTriggered = false;
-        public static string AudioFolder = Path.Combine(Paths.PluginPath, "ReadTextMod\\TTS");
-        public static bool IsPlayingQueue = false;
-        public static bool HasPlayed = false;
-        public static bool HasStartedLoading = false;
-        public static MessagePopup MessagePopupComponent;
-        public static OrderedDictionary AudioQueue = [];
-        private static CampaignData CampaignData;
-        public static string PreviousMessageHash = "garbage";
-
+        private static string AudioFolder = Path.Combine(Paths.PluginPath, "ReadTextMod\\TTS");
+        private static bool IsPlayingQueue = false;
+        private static bool HasStartedLoading = false;
+        private static OrderedDictionary AudioQueue = [];
         public static MethodResolver MethodResolver = null;
         
         void Awake(){
@@ -44,10 +37,17 @@ namespace ReadTextMod{
             MethodResolver.Initialize();
             harmony.PatchAll(); 
             SceneManager.sceneLoaded += OnSceneLoaded;
+            MethodResolver.MessagePopupMethodExecuted += OnMessagePopupMethodExecuted;
+            MethodResolver.MessagePopupCloseExecuted += OnMessagePopupClose;
             Log.LogInfo("ReadTextMod Loaded!");
         }
 
         private void OnDestroy(){
+            if (MethodResolver != null)
+            {
+                MethodResolver.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
+                
+            }
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
        
@@ -61,33 +61,39 @@ namespace ReadTextMod{
 
             Log.LogInfo($"Scene loaded: {scene.name}. Checking for MessagePopup GameObjects.");
             SceneLoadPatchTriggered = true;
-            MethodResolver.TryPatchMethodsNow();
+            MethodResolver?.TryPatchMethodsNow();
         }
 
-        public static void PopupMessageTTS(MessagePopup __instance, GameObject AdditionalInfoAttack = null){
-            
 
-            UILocalizationPacket packet = Traverse.Create(__instance).Field("_localizedText").GetValue<UILocalizationPacket>();
+        private void OnMessagePopupClose(object sender, MessagePopupCloseExecutedEventArgs e){
+             
+            if(AudioSource != null && AudioSource.isPlaying)
+            {
+                AudioSource.Stop();
+                AudioQueue.Clear();
+                IsPlayingQueue = false; 
+                Log.LogInfo("Audio queue playback stopped");
+            }
+        }
+        private void OnMessagePopupMethodExecuted(object sender, MessagePopupMethodExecutedEventArgs e)
+        {
+           
 
-            if(EncounterHelpers.CheckHash(packet, PreviousMessageHash)){
-                Log.LogInfo("Diffrent hash detected, playing sound)");
-                PreviousMessageHash = EncounterHelpers.ComputeMessageHash(packet);
-                HasPlayed = false;
-                List<string> filepaths = EncounterHelpers.KeyInfoResolver(packet, AdditionalInfoAttack);
 
-                //string[] inserts = Traverse.Create(localizationText.KeyInfo).Field("s_localizedInserts").GetValue<string[]>();
+            List<string> filepaths = [];
+            if(e.GameObject != null){
+                
+                filepaths = EncounterHelpers.KeyInfoResolver(e.Instance);
 
                 if (filepaths.Count > 0)
                 {
-                    __instance.StartCoroutine(LoadAndPlayWrapper(filepaths));
+                    e.Instance.StartCoroutine(LoadAndPlayWrapper(filepaths));
+                    
                 }else
                 {
                     Log.LogInfo("Unable to extract path from KeyInfo");
                 }
             }
-
-            
-                
         }
 
         private static IEnumerator LoadSound(List<string> filepaths)
@@ -156,14 +162,13 @@ namespace ReadTextMod{
             }
 
             IsPlayingQueue = false;
-            HasPlayed = true;
         }
 
         private static IEnumerator LoadAndPlayWrapper(List<string> filepaths)
         {
             yield return LoadSound(filepaths);
         
-            if (!IsPlayingQueue && AudioQueue.Count > 0 && HasPlayed == false)
+            if (!IsPlayingQueue && AudioQueue.Count > 0)
             {
                 yield return PlayQueue();
             }
@@ -172,86 +177,5 @@ namespace ReadTextMod{
     }
 }
 
-[HarmonyPatch(typeof(UIPanel), "LateUpdate")]
-public class LateUpdate(){
-
-    static void Postfix(){
-        
-        GameObject MessagePopupObject = GameObject.Find("MessagePopup"); //normal message
-        GameObject MessagePopupEnemy = GameObject.Find("MessagePopup_EnemyActivation"); //enemy attack
-        GameObject MessagePopupNew = GameObject.Find("MessagePopup_New"); //hero last stand
-        GameObject AdditionalInfoAttack = null;
-
-        try
-        {
-            if(MessagePopupObject != null)
-            {
-                ReadText.MessagePopupComponent = (MessagePopup)MessagePopupObject.GetComponentByName("MessagePopup");
-                
-            }
-            else if(MessagePopupEnemy != null)
-            {
-                ReadText.MessagePopupComponent = (MessagePopup)MessagePopupEnemy.GetComponentByName("MessagePopup");
-                AdditionalInfoAttack = GameObject.Find("Label_Attack_AdditionalEffect");
-                
-            }
-            else if(MessagePopupEnemy != null && MessagePopupObject != null){
-                ReadText.Log.LogInfo("Both messeges active");
-            }
-            else if(MessagePopupNew != null)
-            {
-                ReadText.MessagePopupComponent = (MessagePopup)MessagePopupNew.GetComponentByName("MessagePopup");
-                
-            }
-            else
-            {
-                ReadText.HasPlayed = false;
-                ReadText.HasStartedLoading = false;
-                
-            }
-
-            if(ReadText.MessagePopupComponent != null && !ReadText.HasPlayed && ReadText.MessagePopupComponent.IsShowingMessage && ReadText.MessagePopupComponent.isActiveAndEnabled)
-            {
-                    
-                
-                if(AdditionalInfoAttack != null)
-                {
-                    ReadText.Log.LogInfo($"Additional Effect found");
-                    ReadText.PopupMessageTTS(ReadText.MessagePopupComponent, AdditionalInfoAttack);
-                    ReadText.HasStartedLoading = true;
-                    
-                    
-                    
-                }
-                else
-                {
-                    ReadText.PopupMessageTTS(ReadText.MessagePopupComponent);
-                    ReadText.HasStartedLoading = true;
-                   
-                    
-            
-                }      
-            }
-        }
-        catch (ArgumentNullException)
-        {
-            
-            throw new NullReferenceException("This is expected at some point");
-        }
-
-        
-        if(ReadText.AudioSource != null && ReadText.AudioSource.isPlaying && MessagePopupObject == null && MessagePopupEnemy == null && MessagePopupNew == null)
-        {
-                ReadText.AudioSource.Stop();
-                ReadText.AudioQueue.Clear();
-                ReadText.IsPlayingQueue = false; 
-                ReadText.Log.LogInfo("Audio queue playback stopped");
-        }
-
-        
-
-
-    }
-}
 
 

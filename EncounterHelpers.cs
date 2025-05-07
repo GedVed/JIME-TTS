@@ -1,174 +1,107 @@
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using UnityEngine;
-using System.Security.Cryptography;
-using System;
 using ReadTextMod;
+using HarmonyLib;
+using FFG.Common;
+using UnityEngine;
+public static class EncounterHelpers{
 
-
-    public static class EncounterHelpers{
-
-        [Serializable]
-        private class LocalizationTextData
-        {
-                public string LocalizationKey;
-                public string LocalizationKeyInfoKey;
-                public string CompressedValue;
-        }
-
-        private static void RemoveBracket(List<string> strings){
-            if(strings.Contains("0]")){
-                strings.Remove("0]");
-            }
-        }
-
-        public static List<string>KeyInfoResolver(UILocalizationPacket localizationText, GameObject MessagePopupObject, GameObject AdditionalInfoAttack = null){
-            ReadText.Log.LogInfo($"Hash code: {ComputeHash(ConvertLocalizationDataToBytes(localizationText))}");
-
+        
+        public static List<string>KeyInfoResolver(MessagePopup MessagePopupObject){
+            
             List<string> filepaths = [];
-
-            /*
+            UILocalizationPacket localizationText = Traverse.Create(MessagePopupObject).Field("_localizedText").GetValue<UILocalizationPacket>();
+            
             switch (MessagePopupObject.name)
             {
                 case "MessagePopup_New":
-
-                    if(localizationText.KeyInfo.Key == "UI_LAST_STAND_HERO_CONFIRMATION" && string.IsNullOrEmpty(localizationText.key))
+                    if (localizationText.KeyInfo.Key == "UI_LAST_STAND_HERO_CONFIRMATION")
                     {
-                        filepaths = ValueCleaner(localizationText).Where(text => text.StartsWith("UI_LAST_STAND") || text.StartsWith("HERO_")).ToList();
-                    }else if(localizationText.KeyInfo.Key == "UI_LAST_STAND_HERO_CONFIRMATION" && !string.IsNullOrEmpty(localizationText.key))
+                        if (localizationText.key == "UI_CHOOSE_LAST_STAND")
+                        {
+                            filepaths.Add(localizationText.key);
+                        }
+                        else
+                        {
+                            filepaths = ValueCleaner(localizationText)
+                                .Where(text => text.StartsWith("UI_LAST_STAND") || text.StartsWith("HERO_")).ToList();
+                        }
+                    }
+                    else if (localizationText.key == "UI_CHOOSE_LAST_STAND")
+                    {
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                    }
+                    else if (new[] { "UI_LAST_STAND_PASSED_PHYSICAL", "UI_LAST_STAND_PASSED_FEAR", "UI_LAST_STAND_FAILED" }.Contains(localizationText.key))
                     {
                         filepaths.Add(localizationText.key);
-
-                    }else if(localizationText.key == "UI_CHOOSE_LAST_STAND" && !string.IsNullOrEmpty(localizationText.KeyInfo.Key))
-                    {   
-                        
+                    }
+                    break;
+                case "MessagePopup_EnemyActivation":
+                    filepaths.Add(localizationText.key);
+                    GameObject additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
+                    if (additionalInfo != null)
+                    {
+                        filepaths.Add(localizationText.key.Replace("ATTACK", "ADDITIONAL"));
                     }
                     break;
 
-                default:
-                    break;
+                case "MessagePopup":
 
-            }*/
+                        if(!string.IsNullOrEmpty(localizationText.key)){
+                            filepaths.Add(localizationText.key);
+                        }else
+                        {
+                            var textPart = ValueCleaner(localizationText);
 
-            
-            
-            if(localizationText.key != "" && localizationText.KeyInfo.Key != "")
-            {
+                            switch (localizationText.KeyInfo.Key)
+                            {   
+                                case "UI_EXPLORE_TILE_WITH_INTRO_FORMATTED":
+                                    filepaths = textPart.OrderByDescending(text => text.StartsWith("TILE_")).ToList();
+                                    filepaths.Remove(localizationText.KeyInfo.Key);
+                                    RemoveBracket(filepaths);
+                                    break;
 
-                    
-                switch (localizationText.KeyInfo.Key)
-                {
-                case "UI_EXPLORE_TILE_WITH_INTRO_FORMATTED":
+                                case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
+                                case "PLACE_TILE_NO_FLAVOR":
+                                    var prefix = localizationText.KeyInfo.Key == "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED" ? "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED" : "PLACE_TILE_NO_FLAVOR";
+                                    var temp = textPart.ToList();
+                                    temp.Remove(localizationText.KeyInfo.Key);
+                                    RemoveBracket(temp);
+                                    filepaths.AddRange(new[] { $"{prefix}_1" }.Concat(temp).Concat(new[] { $"{prefix}_2" }));
+                                    break;
 
-                    localizationText.KeyInfo.Key = "";
-                    break;
-                case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
+                                case "PLACE_SEARCH":
+                                case "PLACE_THREAT":
+                                case "PLACE_PERSON":
+                                    filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                                    RemoveBracket(filepaths);
+                                    break;
 
-                    localizationText.KeyInfo.Key = "";
-                    break;
-                default:
-
-                    break;
-                }
-                    
-            }
-            
-
-            
-            if(!string.IsNullOrEmpty(localizationText.key))
-            {
-                filepaths.Add(localizationText.key);
-                if (AdditionalInfoAttack != null)
-                            filepaths.Add(localizationText.key.Replace("ATTACK", "ADDITIONAL"));
-            }
-            else
-            {
-
-                var textPart = localizationText.KeyInfo.CompressedValue.Trim('[', ']').Split('|').Where(p => !int.TryParse(p, out _)).Select(p => p.Trim());
-                
-
-                switch (localizationText.KeyInfo.Key)
-                {
-                    case "UI_EXPLORE_TILE_WITH_INTRO_FORMATTED":
-                        //[-1|-1|UI_EXPLORE_TILE_WITH_INTRO_FORMATTED|2|8|0|TILE_201A_3|0|8|0|UI_DISCARD_EXPLORE_TOKEN_WITH_INSPIRATION|0]
-                        filepaths = textPart.OrderByDescending(text => text.StartsWith("TILE_")).ToList();
-                        filepaths.Remove(localizationText.KeyInfo.Key);
-                        RemoveBracket(filepaths);
-                        
-                        break;
-
-                    case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
-                            //[-1|-1|UI_SECTION_REVEAL_PLACE_TILE_FORMATTED|1|10|0|209A|0]
-                            var temp_UI_SECTION = textPart.ToList();
-                            temp_UI_SECTION.Remove(localizationText.KeyInfo.Key);
-                            RemoveBracket(temp_UI_SECTION);
-                            filepaths.AddRange(new[]
-                            {
-                                "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED_1"
-                            }.Concat(temp_UI_SECTION).Concat(new[] {
-                                "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED_2"
-                            }));
-                        break;
-
-                    case "PLACE_TILE_NO_FLAVOR":
-                        //[-1|-1|PLACE_TILE_NO_FLAVOR|1|8|0|402A|0]
-                        var temp_TILE_NO = textPart.ToList();
-                        temp_TILE_NO.Remove(localizationText.KeyInfo.Key);
-                        RemoveBracket(temp_TILE_NO);
-                        filepaths.AddRange(new[]
-                            {
-                                "PLACE_TILE_NO_FLAVOR_1"
-                            }.Concat(temp_TILE_NO).Concat(new[] {
-                                "PLACE_TILE_NO_FLAVOR_2"
-                            }));
-                        break;
-
-                    case "PLACE_SEARCH":
-                        //[-1|-1|PLACE_SEARCH|1|8|0|C_STORM_SEARCH|0]
-
-                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
-                        RemoveBracket(filepaths);
-                        break;
-
-                    case "PLACE_THREAT":
-                        
-                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
-                        RemoveBracket(filepaths);
-                        break;
-
-                    case "PLACE_PERSON":
-                        //[-1|-1|PLACE_PERSON|1|8|0|A29_ELF_PLACE|0]
-                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
-                        RemoveBracket(filepaths);
-                        break;
-
-                    case "UI_AWARD_ITEM_FORMATTED":
-
-                        filepaths.Add("UI_AWARD_ITEM_FORMATTED_1");
-                        filepaths.AddRange(textPart.Where(text => text.StartsWith("ITEM_"))); //Should only add 1 one item
-                        
-                        filepaths.Add("UI_AWARD_ITEM_FORMATTED_2");
-                        break;
-                
-                    case "UI_LAST_STAND_HERO_CONFIRMATION":
-
-                        filepaths = textPart.Where(text => text.StartsWith("UI_LAST_STAND") || text.StartsWith("HERO_")).ToList();
-                        break;
-                        
+                                case "UI_AWARD_ITEM_FORMATTED":
+                                    filepaths.Add("UI_AWARD_ITEM_FORMATTED_1");
+                                    filepaths.AddRange(textPart.Where(text => text.StartsWith("ITEM_")));
+                                    filepaths.Add("UI_AWARD_ITEM_FORMATTED_2");
+                                    break;
+                                default:
+                                    filepaths.Add(localizationText.KeyInfo.Key);
+                                    break;
+                            }
+                            
+                        }
+                            break;
                     default:
-                        
-                        filepaths.Add(localizationText.KeyInfo.Key);
-
                         break;
-                }
+
             }
-                
-                return filepaths;
+            if(MessagePopupObject.name == "MessagePopup"){
+                localizationText.key = "";
+            }
+            
+            return filepaths;
+            
         }
 
-        public static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
+        private static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
             if(localizationPacket != null){
                 var textPart = localizationPacket.KeyInfo.CompressedValue.Trim('[', ']').Split('|').Where(p => !int.TryParse(p, out _)).Select(p => p.Trim());
                 return textPart;
@@ -178,59 +111,10 @@ using ReadTextMod;
             }
             
         }
-
-        private static byte[] ConvertLocalizationDataToBytes(UILocalizationPacket localizationPacket)
-        {
-            if (localizationPacket == null)
-            {
-                ReadText.Log.LogError("LocalizationPacket is null!");
-                return null;
+        private static void RemoveBracket(List<string> strings){
+            if(strings.Contains("0]")){
+                strings.Remove("0]");
             }
-
-            LocalizationTextData localizationData = new LocalizationTextData
-            {
-                LocalizationKey = localizationPacket.key,
-                LocalizationKeyInfoKey = localizationPacket.KeyInfo.Key,
-                CompressedValue = localizationPacket.KeyInfo.CompressedValue
-            };
-
-            BinaryFormatter formatter = new BinaryFormatter();
-            using(MemoryStream stream = new MemoryStream()){
-                formatter.Serialize(stream, localizationData);
-                return stream.ToArray();
-            }    
-        }
-
-        private static string ComputeHash(byte [] bytes){
-            if(bytes == null) return null;
-
-            using(MD5 md5 = MD5.Create()){
-                byte[] hash = md5.ComputeHash(bytes);
-                return BitConverter.ToString(hash).Replace("-","").ToLower();
-            }
-        }
-
-
-        public static string ComputeMessageHash(UILocalizationPacket packet){
-
-            if(packet != null)
-            {
-                return ComputeHash(ConvertLocalizationDataToBytes(packet));
-            }else
-            {
-                return null;
-            }
-        }
-        public static bool CheckHash(UILocalizationPacket NewPacket, string OldPacket){
-
-            if(ComputeHash(ConvertLocalizationDataToBytes(NewPacket)) != OldPacket)
-            {
-                return true;
-            }else
-            {
-                return false;
-            }
-
         }
 
     }
