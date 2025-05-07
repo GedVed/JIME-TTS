@@ -1,7 +1,12 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
+
 using UnityEngine;
-using UnityEngine.UIElements;
+using System.Security.Cryptography;
+using System;
+
 
 
 namespace ReadTextMod
@@ -9,18 +14,49 @@ namespace ReadTextMod
 
     public static class EncounterHelpers{
 
+        [System.Serializable]
+        private class LocalizationTextData
+        {
+                public string LocalizationKey;
+                public string LocalizationKeyInfoKey;
+                public string CompressedValue;
+        }
+
         private static void RemoveBracket(List<string> strings){
             if(strings.Contains("0]")){
                 strings.Remove("0]");
             }
         }
 
-        public static List<string>KeyInfoResolver(UILocalizationPacket localizationText, GameObject AdditionalInfoAttack = null){
-
-            
+        public static List<string>KeyInfoResolver(UILocalizationPacket localizationText, GameObject MessagePopupObject, GameObject AdditionalInfoAttack = null){
+            ReadText.Log.LogInfo($"Hash code: {ComputeHash(ConvertLocalizationDataToBytes(localizationText))}");
 
             List<string> filepaths = [];
 
+            /*
+            switch (MessagePopupObject.name)
+            {
+                case "MessagePopup_New":
+
+                    if(localizationText.KeyInfo.Key == "UI_LAST_STAND_HERO_CONFIRMATION" && string.IsNullOrEmpty(localizationText.key))
+                    {
+                        filepaths = ValueCleaner(localizationText).Where(text => text.StartsWith("UI_LAST_STAND") || text.StartsWith("HERO_")).ToList();
+                    }else if(localizationText.KeyInfo.Key == "UI_LAST_STAND_HERO_CONFIRMATION" && !string.IsNullOrEmpty(localizationText.key))
+                    {
+                        filepaths.Add(localizationText.key);
+
+                    }else if(localizationText.key == "UI_CHOOSE_LAST_STAND" && !string.IsNullOrEmpty(localizationText.KeyInfo.Key))
+                    {   
+                        
+                    }
+                    break;
+
+                default:
+                    break;
+
+            }*/
+
+            
             
             if(localizationText.key != "" && localizationText.KeyInfo.Key != "")
             {
@@ -135,11 +171,71 @@ namespace ReadTextMod
                 
                 return filepaths;
         }
-    
-    
-    
-    
-    
-    
+
+        public static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
+            if(localizationPacket != null){
+                var textPart = localizationPacket.KeyInfo.CompressedValue.Trim('[', ']').Split('|').Where(p => !int.TryParse(p, out _)).Select(p => p.Trim());
+                return textPart;
+            }else{
+                ReadText.Log.LogInfo("Compressed value does not exists or is mismatched");
+                return null;
+            }
+            
+        }
+
+        private static byte[] ConvertLocalizationDataToBytes(UILocalizationPacket localizationPacket)
+        {
+            if (localizationPacket == null)
+            {
+                ReadText.Log.LogError("LocalizationPacket is null!");
+                return null;
+            }
+
+            LocalizationTextData localizationData = new LocalizationTextData
+            {
+                LocalizationKey = localizationPacket.key,
+                LocalizationKeyInfoKey = localizationPacket.KeyInfo.Key,
+                CompressedValue = localizationPacket.KeyInfo.CompressedValue
+            };
+
+            BinaryFormatter formatter = new BinaryFormatter();
+            using(MemoryStream stream = new MemoryStream()){
+                formatter.Serialize(stream, localizationData);
+                return stream.ToArray();
+            }    
+        }
+
+        private static string ComputeHash(byte [] bytes){
+            if(bytes == null) return null;
+
+            using(MD5 md5 = MD5.Create()){
+                byte[] hash = md5.ComputeHash(bytes);
+                return BitConverter.ToString(hash).Replace("-","").ToLower();
+            }
+        }
+
+
+        public static string ComputeMessageHash(UILocalizationPacket packet){
+
+            if(packet != null)
+            {
+                return ComputeHash(ConvertLocalizationDataToBytes(packet));
+            }else
+            {
+                return null;
+            }
+        }
+        public static bool CheckHash(UILocalizationPacket NewPacket, string OldPacket){
+
+            if(ComputeHash(ConvertLocalizationDataToBytes(NewPacket)) != OldPacket)
+            {
+                return true;
+            }else
+            {
+                return false;
+            }
+
+        }
+
     }
 }
