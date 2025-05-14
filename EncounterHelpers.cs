@@ -4,6 +4,7 @@ using ReadTextMod;
 using HarmonyLib;
 using FFG.Common;
 using UnityEngine;
+using System;
 public static class EncounterHelpers{
 
         
@@ -11,7 +12,7 @@ public static class EncounterHelpers{
             
             List<string> filepaths = [];
             UILocalizationPacket localizationText = Traverse.Create(MessagePopupObject).Field("_localizedText").GetValue<UILocalizationPacket>();
-            
+
             switch (MessagePopupObject.name)
             {
                 case "MessagePopup_New":
@@ -56,6 +57,7 @@ public static class EncounterHelpers{
                             switch (localizationText.KeyInfo.Key)
                             {   
                                 case "UI_EXPLORE_TILE_WITH_INTRO_FORMATTED":
+                                
                                     filepaths = textPart.OrderByDescending(text => text.StartsWith("TILE_")).ToList();
                                     filepaths.Remove(localizationText.KeyInfo.Key);
                                     RemoveBracket(filepaths);
@@ -63,6 +65,7 @@ public static class EncounterHelpers{
 
                                 case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
                                 case "PLACE_TILE_NO_FLAVOR":
+
                                     var prefix = localizationText.KeyInfo.Key == "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED" ? "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED" : "PLACE_TILE_NO_FLAVOR";
                                     var temp = textPart.ToList();
                                     temp.Remove(localizationText.KeyInfo.Key);
@@ -78,12 +81,50 @@ public static class EncounterHelpers{
                                     break;
 
                                 case "UI_AWARD_ITEM_FORMATTED":
-                                    filepaths.Add("UI_AWARD_ITEM_FORMATTED_1");
-                                    filepaths.AddRange(textPart.Where(text => text.StartsWith("ITEM_")));
-                                    filepaths.Add("UI_AWARD_ITEM_FORMATTED_2");
+
+                                    var prefix2 = localizationText.KeyInfo.Key;
+                                    var temp2 = textPart.ToList();
+                                    temp2.Remove(localizationText.KeyInfo.Key);
+                                    RemoveBracket(temp2);
+                                    filepaths.AddRange(new [] {$"{prefix2}_1"}.Concat(temp2).Concat(new [] {$"{prefix2}_2"}));
+                                    break;
+
+                                case "UI_ENEMY_REMOVAL_REMINDER_FORMATTED":
+
+                                    filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
+                                    filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
+                                    RemoveBracket(filepaths);
+                                    
+                                    var enemyGroup = localizationText?.KeyInfo?.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert switch
+                                            {
+                                                { RawText: not null } when !string.IsNullOrEmpty(insert.RawText) => insert.RawText,
+                                                { EnemyGroup.Model: not null } when filepaths.Count > 1 && int.TryParse(filepaths[1], out int count) && count > 1 => insert.EnemyGroup.Model.KeyPlural,
+                                                { EnemyGroup.Model: not null } => insert.EnemyGroup.Model.KeySingular,
+                                                _ => null
+                                            }).Where(path => path != null);
+                                    
+                                    filepaths.InsertRange(1, enemyGroup);
+                                    foreach(var text in filepaths){
+                                        ReadText.Log.LogInfo(text);
+                                    }
+                                    break;
+                                case "A1_M1_E1_ENEMIES":
+
+                                        filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
+                                        RemoveBracket(filepaths);
+
                                     break;
                                 default:
-                                    filepaths.Add(localizationText.KeyInfo.Key);
+                                    if(textPart.Contains("OBJECTIVE")){
+                                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                                        RemoveBracket(filepaths);
+                                        if(localizationText.KeyInfo.Inserts[1] != null && localizationText.KeyInfo.Inserts[1].IsUsed)
+                                        filepaths.Add(Convert.ToString(localizationText.KeyInfo.Inserts[1].CompressedIntData));
+                                    }
+                                    else
+                                    {
+                                        filepaths.Add(localizationText.KeyInfo.Key);
+                                    }
                                     break;
                             }
                             
@@ -120,5 +161,15 @@ public static class EncounterHelpers{
             }
         }
 
+        /*
+        private static List<string> AudioQueueCorrectOrder(UILocalizationPacket localizationText, IEnumerable<string> textPart, List<string> filepaths){
+
+            var prefix = localizationText.KeyInfo.Key == "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED" ? "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED" ? : "PLACE_TILE_NO_FLAVOR";
+            var temp = textPart.ToList();
+            temp.Remove(localizationText.KeyInfo.Key);
+            RemoveBracket(temp);
+            filepaths.AddRange(new[] { $"{prefix}_1" }.Concat(temp).Concat(new[] { $"{prefix}_2" }));
+            return filepaths;
+        }*/
     }
 

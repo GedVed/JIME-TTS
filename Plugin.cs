@@ -83,10 +83,10 @@ namespace ReadTextMod{
         private void OnMessagePopupMethodExecuted(object sender, MessagePopupMethodExecutedEventArgs e)
         {
     
-            List<string> filepaths = [];
+           
             if(e.GameObject != null){
                 
-                filepaths = EncounterHelpers.KeyInfoResolver(e.Instance);
+                List<string> filepaths = EncounterHelpers.KeyInfoResolver(e.Instance);
 
                 if (filepaths.Count > 0)
                 {
