@@ -115,15 +115,18 @@ public static class EncounterHelpers{
 
                                     break;
                                 default:
-                                    if(textPart.Contains("OBJECTIVE")){
+                                    if(textPart.Contains("OBJECTIVE"))
+                                    {
                                         filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
                                         RemoveBracket(filepaths);
-                                        if(localizationText.KeyInfo.Inserts[1] != null && localizationText.KeyInfo.Inserts[1].IsUsed)
-                                        filepaths.Add(Convert.ToString(localizationText.KeyInfo.Inserts[1].CompressedIntData));
+                                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(1) is { IsUsed: true } insert)
+                                        {
+                                            filepaths.Add(insert.CompressedIntData.ToString());
+                                        }
                                     }
                                     else
                                     {
-                                        filepaths.Add(localizationText.KeyInfo.Key);
+                                        filepaths.Add(localizationText?.KeyInfo?.Key ?? "");
                                     }
                                     break;
                             }
