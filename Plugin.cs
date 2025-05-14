@@ -28,7 +28,8 @@ namespace ReadTextMod{
         private static OrderedDictionary AudioQueue = [];
         public static MethodResolver MethodResolver = null;
         
-        void Awake(){
+        void Awake()
+        {
             var harmony = new Harmony("GedVed.lotr.readtext");
             Log = Logger;
             MethodResolver = new MethodResolver(harmony, this);
@@ -42,10 +43,12 @@ namespace ReadTextMod{
             Log.LogInfo("ReadTextMod Loaded!");
         }
 
-        private void OnDestroy(){
+        private void OnDestroy()
+        {
             if (MethodResolver != null)
             {
                 MethodResolver.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
+                MethodResolver.MessagePopupCloseExecuted -= OnMessagePopupClose;
                 
             }
             SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -65,7 +68,8 @@ namespace ReadTextMod{
         }
 
 
-        private void OnMessagePopupClose(object sender, MessagePopupCloseExecutedEventArgs e){
+        private void OnMessagePopupClose(object sender, MessagePopupCloseExecutedEventArgs e)
+        {
              
             if(AudioSource != null && AudioSource.isPlaying)
             {
@@ -75,11 +79,10 @@ namespace ReadTextMod{
                 Log.LogInfo("Audio queue playback stopped");
             }
         }
+
         private void OnMessagePopupMethodExecuted(object sender, MessagePopupMethodExecutedEventArgs e)
         {
-           
-
-
+    
             List<string> filepaths = [];
             if(e.GameObject != null){
                 

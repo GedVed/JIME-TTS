@@ -102,17 +102,20 @@ public static class EncounterHelpers{
         }
 
         private static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
-            if(localizationPacket != null){
+            if(localizationPacket != null)
+            {
                 var textPart = localizationPacket.KeyInfo.CompressedValue.Trim('[', ']').Split('|').Where(p => !int.TryParse(p, out _)).Select(p => p.Trim());
                 return textPart;
-            }else{
+            }else
+            {
                 ReadText.Log.LogInfo("Compressed value does not exists or is mismatched");
                 return null;
             }
             
         }
         private static void RemoveBracket(List<string> strings){
-            if(strings.Contains("0]")){
+            if(strings.Contains("0]"))
+            {
                 strings.Remove("0]");
             }
         }

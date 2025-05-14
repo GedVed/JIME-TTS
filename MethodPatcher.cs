@@ -36,11 +36,11 @@ public class MethodResolver
 
         // State
         private readonly Harmony Harmony;
-        private readonly MonoBehaviour MonoBehaviour; // For coroutine
+        private readonly MonoBehaviour MonoBehaviour; 
         private readonly Dictionary<MethodInfo, string> MethodNameMap = new Dictionary<MethodInfo, string>(); // Maps MethodInfo to methodName
         private readonly List<string> PatchedMethods = new List<string>(); // Tracks successfully patched methods
-        private bool IsPatched = false; // Prevents re-patching
-        private GameObject LastFoundGameObject; // Store for test invocation
+        private bool IsPatched = false; 
+        private GameObject LastFoundGameObject; 
 
         public MethodResolver(Harmony harmony, MonoBehaviour monoBehaviour)
         {
@@ -293,8 +293,8 @@ public class MethodResolver
         public string MethodName { get; }
         public GameObject GameObject { get; }
         public bool IsActive { get; }
-        
         public MessagePopup Instance { get; }
+        
         public MessagePopupMethodExecutedEventArgs(string methodName, GameObject gameObject, bool isActive, MessagePopup instance)
         {
             MethodName = methodName;
@@ -307,7 +307,9 @@ public class MethodResolver
     {
         public bool IsActive { get; }
         public MessagePopup Instance { get; }
-        public MessagePopupCloseExecutedEventArgs(bool isActive, MessagePopup instance){
+
+        public MessagePopupCloseExecutedEventArgs(bool isActive, MessagePopup instance)
+        {
             IsActive = isActive;
             Instance = instance;
         }
