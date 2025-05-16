@@ -27,6 +27,13 @@ namespace ReadTextMod{
         private static bool HasStartedLoading = false;
         private static OrderedDictionary AudioQueue = [];
         public static MethodResolver MethodResolver = null;
+
+        public static List<string> enemyActivations = new List<string>{"ENEMY_GOBLIN_ACTIVATION","ENEMY_RUFFIAN_ACTIVATION","ENEMY_ORC_MARAUDER_ACTIVATION","ENEMY_ORC_HUNTER_ACTIVATION",
+            "ENEMY_HUNGRY_WARG_ACTIVATION","ENEMY_WIGHT_ACTIVATION","ENEMY_HILL_TROLL_ACTIVATION","ENEMY_ATARIN_ACTIVATION","ENEMY_ULUK_ACTIVATION","ENEMY_GULGOTAR_ACTIVATION",
+            "ENEMY_GIANT_SPIDER_ACTIVATION","ENEMY_PIT_GOBLIN_ACTIVATION","ENEMY_ORC_TASKMASTER_ACTIVATION","ENEMY_SHADOWMAN_ACTIVATION","ENEMY_NAMELESS_THING_ACTIVATION",
+            "ENEMY_CAVE_TROLL_ACTIVATION","ENEMY_UNGOLIANT_ACTIVATION","ENEMY_BALROG_ACTIVATION","ENEMY_SOLDIER_ACTIVATION","ENEMY_URUK_ACTIVATION","ENEMY_FELL_BEAST_ACTIVATION",
+            "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION"};
+        public static CampaignData CampaignData;
         
         void Awake()
         {
@@ -85,8 +92,7 @@ namespace ReadTextMod{
     
            
             if(e.GameObject != null){
-                
-                List<string> filepaths = EncounterHelpers.KeyInfoResolver(e.Instance);
+                List<string> filepaths = EncounterHelpers.KeyInfoResolver(e.Instance, e.LocalizationPacket);
 
                 if (filepaths.Count > 0)
                 {

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Collections;
 using ReadTextMod;
 using FFG.Common;
-using UnityEngine.Bindings;
+
 
 
 public class MethodResolver
@@ -214,7 +214,7 @@ public class MethodResolver
         
 
         // Postfix for target methods to track execution
-        private static void Postfix(MethodInfo __originalMethod, object __instance)
+        private static void Postfix(MethodInfo __originalMethod, object __instance, object[] __args)
         {
             MethodResolver resolver = ReadText.MethodResolver;
             if (resolver == null)
@@ -228,12 +228,15 @@ public class MethodResolver
                 GameObject gameObject = null;
                 bool isActive = false;
                 MessagePopup instance = null;
+                LocalizationPacket localizationPacket = null;
 
                 if (__instance is MessagePopup messagePopup && messagePopup.gameObject != null)
                 {
                     gameObject = messagePopup.gameObject;
                     isActive = gameObject.activeInHierarchy;
                     instance = messagePopup;
+                    localizationPacket = __args.OfType<LocalizationPacket>().FirstOrDefault();
+
                 }
 
                 // Raise the event
@@ -241,7 +244,9 @@ public class MethodResolver
                     methodName,
                     gameObject,
                     isActive,
-                    instance
+                    instance,
+                    localizationPacket
+                    
                 ));
 
                 ReadText.Log.LogInfo($"Event invoked for {methodName}. Handlers: {resolver.MessagePopupMethodExecuted?.GetInvocationList().Length ?? 0}");
@@ -294,14 +299,18 @@ public class MethodResolver
         public GameObject GameObject { get; }
         public bool IsActive { get; }
         public MessagePopup Instance { get; }
-        
-        public MessagePopupMethodExecutedEventArgs(string methodName, GameObject gameObject, bool isActive, MessagePopup instance)
-        {
-            MethodName = methodName;
-            GameObject = gameObject;
-            IsActive = isActive;
-            Instance = instance;
-        }
+
+        public LocalizationPacket LocalizationPacket{ get; }
+
+    public MessagePopupMethodExecutedEventArgs(string methodName, GameObject gameObject, bool isActive, MessagePopup instance, LocalizationPacket packet)
+    {
+        MethodName = methodName;
+        GameObject = gameObject;
+        IsActive = isActive;
+        Instance = instance;
+        LocalizationPacket = packet;
+
+    }
     }
     public class MessagePopupCloseExecutedEventArgs : EventArgs
     {
