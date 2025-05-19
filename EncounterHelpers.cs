@@ -5,15 +5,15 @@ using HarmonyLib;
 using FFG.Common;
 using UnityEngine;
 using FFG.JIME;
-using System;
+
+public static class EncounterHelpers
+{
 
 
-public static class EncounterHelpers{
+    public static List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet)
+    {
 
-        
-    public static List<string>KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet){
-        
-        
+
         List<string> filepaths = [];
         UILocalizationPacket localizationText = Traverse.Create(MessagePopupObject).Field("_localizedText").GetValue<UILocalizationPacket>();
 
@@ -30,170 +30,203 @@ public static class EncounterHelpers{
                     filepaths.Add(packet.Key);
                 }
                 break;
-                
-                case "MessagePopup_EnemyActivation":
 
+            case "MessagePopup_EnemyActivation":
 
-                    if (ReadText.enemyActivations.Contains(packet.Key))
+                filepaths.Add(packet.Key);
+
+                if (ReadText.enemyActivations.Contains(packet.Key))
+                {
+                    string hero = FindHero(localizationText);
+                    if (!string.IsNullOrEmpty(hero))
                     {
-                        filepaths.Add(packet.Key);
-                        if (localizationText.KeyInfo.UniqueArgCount > 0)
-                        {
-                            var heroAttacked = localizationText?.KeyInfo?.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
-
-                            Component[] components = GameObject.Find("PersistentGameObject").GetComponents(typeof(Component));
-                            GameData data = (GameData)components[4]; //Magic number but Persistent game object will always exist in this contex
-                            Hero[] heroes = Traverse.Create(data).Field("_heroes").GetValue<Hero[]>();
-                            var temp = heroes[heroAttacked[0]].Model.NameKey;
-
-                            filepaths.Insert(1, temp);
-                        }
-                        filepaths.Add("ENEMY_ACTIVATION_ATTACK");
+                        filepaths.Insert(1, hero);
                     }
 
-                    /*
-                    if (string.IsNullOrEmpty(localizationText.key) || !string.IsNullOrEmpty(localizationText.key) && !string.IsNullOrEmpty(localizationText.KeyInfo.Key))
+                    string attackKey = packet.Key == "ENEMY_BALROG_ACTIVATION"
+                        ? "ENEMY_ACTIVATION_ATTACK_BALROG"
+                        : "ENEMY_ACTIVATION_ATTACK";
+                    filepaths.Add(attackKey);
+                }
+                else
+                {
+
+                    var additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
+                    if (additionalInfo != null)
                     {
-                        if (localizationText.KeyInfo.UniqueArgCount > 0)
-                        {
-                            var textPart2 = ValueCleaner(localizationText);
-                            filepaths = AudioQueueCorrectOrder(localizationText, textPart2, filepaths);
-                            var heroAttacked = localizationText?.KeyInfo?.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
-
-                            Component[] components = GameObject.Find("PersistentGameObject").GetComponents(typeof(Component));
-                            GameData data = (GameData)components[4];
-                            Hero[] heroes = Traverse.Create(data).Field("_heroes").GetValue<Hero[]>();
-                            var temp = heroes[heroAttacked[0]].Model.NameKey;
-
-                            filepaths.Insert(1, temp);
-                        }
-                        else
-                        {
-                            filepaths.Add(localizationText.KeyInfo.Key);
-                        }
-
+                        filepaths.Add(packet.Key.Replace("ATTACK", "ADDITIONAL"));
                     }
-                    else
-                    {
-                        filepaths.Add(localizationText.key);
-                        GameObject additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
-                        if (additionalInfo != null)
-                        {
-                            filepaths.Add(localizationText.key.Replace("ATTACK", "ADDITIONAL"));
-                        }
-                    }*/
-                    
-                    break;
+                }
 
-                case "MessagePopup":
+                break;
 
-                    var textPart = ValueCleaner(localizationText);
+            case "MessagePopup":
 
-                        switch (packet.Key)
-                        {   
-                            case "UI_EXPLORE_TILE_WITH_INTRO_FORMATTED":
-                            
-                                filepaths = textPart.OrderByDescending(text => text.StartsWith("TILE_")).ToList();
-                                filepaths.Remove(localizationText.KeyInfo.Key);
-                                RemoveBracket(filepaths);
-                                break;
+                var textPart = ValueCleaner(localizationText);
 
-                            case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
-                            case "PLACE_TILE_NO_FLAVOR":
+                switch (packet.Key)
+                {
+                    case "UI_EXPLORE_TILE_WITH_INTRO_FORMATTED":
 
-                                filepaths = AudioQueueCorrectOrder(localizationText, textPart, filepaths);
-                                break;
-
-                            case "PLACE_SEARCH":
-                            case "PLACE_THREAT":
-                            case "PLACE_PERSON":
-
-                                filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
-                                RemoveBracket(filepaths);
-                                break;
-
-                            case "UI_AWARD_ITEM_FORMATTED":
-        
-                                filepaths = AudioQueueCorrectOrder(localizationText, textPart, filepaths);
-                                break;
-
-                            case "UI_ENEMY_REMOVAL_REMINDER_FORMATTED":
-            
-                                filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
-                                filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
-                                RemoveBracket(filepaths);
-                                filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
-                                break;
-
-
-                            case "UI_SPAWN_GROUP_FORMAT":
-
-                                filepaths = AudioQueueCorrectOrder(localizationText, textPart, filepaths);
-                                filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
-                                RemoveBracket(filepaths);
-                                filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
-                                break;
-
-                            case "UI_THREAT_INCREASE":
-                                filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
-                                RemoveBracket(filepaths);
-                                if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsert)
-                                {
-                                    filepaths.Add(firstInsert.RawText);
-                                }
-                                break;
-
-                            case "A1_M1_E1_ENEMIES":
-
-                                filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
-                                RemoveBracket(filepaths);
-                                break;
-
-                            default:
-                                if(textPart.Contains("OBJECTIVE"))
-                                {
-                                    filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
-                                    RemoveBracket(filepaths);
-                                    if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(1) is { IsUsed: true } secondInsert)
-                                    {
-                                        filepaths.Add(secondInsert.CompressedIntData.ToString());
-                                    }
-                                }
-                                else
-                                {
-                                    filepaths.Add(packet.Key);
-                                }
-                                break;
-                        }
-                            break;
-                    default:
-                        ReadText.Log.LogError("MessagePopupObject does not exists or is invalid");
+                        filepaths = textPart.OrderByDescending(text => text.StartsWith("TILE_")).ToList();
+                        filepaths.Remove(localizationText.KeyInfo.Key);
+                        RemoveBracket(filepaths);
                         break;
-            }
-        
+
+                    case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
+                    case "PLACE_TILE_NO_FLAVOR":
+
+                        AudioQueueCorrectOrder(localizationText, textPart, filepaths);
+                        break;
+
+                    case "PLACE_SEARCH":
+                    case "PLACE_THREAT":
+                    case "PLACE_PERSON":
+
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
+                        break;
+
+                    case "UI_AWARD_ITEM_FORMATTED":
+
+                        AudioQueueCorrectOrder(localizationText, textPart, filepaths);
+                        break;
+
+                    case "UI_ENEMY_REMOVAL_REMINDER_FORMATTED":
+
+                        filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
+                        filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
+                        RemoveBracket(filepaths);
+                        filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
+                        break;
+                    case "UI_ENEMY_REMOVAL_UNIQUE_REMINDER_FORMATTED":
+                        filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
+                        filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
+                        RemoveBracket(filepaths);
+                        filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
+                        break;
+                    case "UI_SPAWN_GROUP_FORMAT":
+
+                        AudioQueueCorrectOrder(localizationText, textPart, filepaths);
+                        filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
+                        RemoveBracket(filepaths);
+                        filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
+                        break;
+
+                    case "UI_THREAT_INCREASE":
+
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
+                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsert)
+                        {
+                            filepaths.Add(firstInsert.RawText);
+                        }
+                        break;
+                        
+                    case string s when s.Contains("ENEMIES"): //case "A1_M1_E1_ENEMIES":
+
+                        filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
+                        break;
+
+                    case string s when s.Contains("_SPAWN"):
+
+                        EnemySpawn(packet, localizationText, filepaths, textPart);
+
+                        break;
+
+                    case string s when s.Contains("OBJECTIVE"):
+
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
+                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(1) is { IsUsed: true } secondInsert)
+                        {
+                            filepaths.Add(secondInsert.CompressedIntData.ToString());
+                        }
+                        break;
+
+                    default:
+
+                        filepaths.Add(packet.Key);
+                        break;
+                }
+                break;
+
+            default:
+                ReadText.Log.LogError("MessagePopupObject does not exists or is invalid");
+                break;
+        }
+
         return filepaths;
     }
 
-    private static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket){
-        if(localizationPacket != null)
+
+    private static void EnemySpawn(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths, IEnumerable<string> textPart)
+    {
+        string hero = FindHero(localizationText);
+        if (!string.IsNullOrEmpty(hero))
+        {
+            AudioQueueCorrectOrderEnemy(packet, hero, filepaths);
+        }
+        else
+        {
+            filepaths.Add(packet.Key);
+        }
+    }
+
+    private static string FindHero(UILocalizationPacket localizationText)
+    {
+        if (localizationText?.KeyInfo?.UniqueArgCount > 0)
+        {
+            var heroAttacked = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed)
+            .Select(insert => insert.CompressedIntData)
+            .FirstOrDefault();
+
+            if (heroAttacked.HasValue)
+            {
+                var gameData = GameObject.Find("PersistentGameObject")?.GetComponent<GameData>();
+                if (gameData != null)
+                {
+                    Hero[] heroes = Traverse.Create(gameData).Field("_heroes").GetValue<Hero[]>();
+                    if (heroes != null && heroAttacked.Value < heroes.Length)
+                    {
+                        return heroes[heroAttacked.Value].Model.NameKey;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket)
+    {
+
+        if (localizationPacket != null)
         {
             var textPart = localizationPacket.KeyInfo.CompressedValue.Trim('[', ']').Split('|').Where(p => !int.TryParse(p, out _)).Select(p => p.Trim());
             return textPart;
-        }else
+        }
+        else
         {
             ReadText.Log.LogInfo("Compressed value does not exists or is mismatched");
             return null;
         }
-        
+
     }
-    private static void RemoveBracket(List<string> strings){
-        if(strings.Contains("0]"))
+
+    private static void RemoveBracket(List<string> strings)
+    {
+
+        if (strings.Contains("0]"))
         {
             strings.Remove("0]");
         }
+
     }
+
     private static IEnumerable<string> FindEnemyGroup(List<string> filepaths, UILocalizationPacket localizationText)
     {
+
         var enemyGroup = localizationText?.KeyInfo?.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert switch
         {
             { RawText: not null } when !string.IsNullOrEmpty(insert.RawText) => insert.RawText,
@@ -208,16 +241,60 @@ public static class EncounterHelpers{
         else
         {
             return null;
-        }                          
-    }  
-    private static List<string> AudioQueueCorrectOrder(UILocalizationPacket localizationText, IEnumerable<string> textPart, List<string> filepaths){
+        }
+
+    }
+
+    private static void AudioQueueCorrectOrder(UILocalizationPacket localizationText, IEnumerable<string> textPart, List<string> filepaths)
+    {
 
         var prefix = localizationText.KeyInfo.Key;
         var temp = textPart.ToList();
         temp.Remove(localizationText.KeyInfo.Key);
         RemoveBracket(temp);
         filepaths.AddRange(new[] { $"{prefix}_1" }.Concat(temp).Concat(new[] { $"{prefix}_2" }));
-        return filepaths;
+
+    }
+
+    private static void AudioQueueCorrectOrderEnemy(LocalizationPacket packet, string hero, List<string> filepaths)
+    {
+
+        List<string> temp = [];
+        temp.Add(hero);
+
+        switch (packet.Key)
+        {
+            //Shadowed Paths
+            case "A29_FIRST_SPIDER_SPAWN":
+            case "A29_FIRST_SPIDER_SPAWN_LARGE":
+
+                filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp).Concat(new[] { $"{packet.Key}_1" }).Concat(temp).Concat(new[] { $"{packet.Key}_2" }).Concat(temp));
+                break;
+
+            //Spreading War
+            case "A59_FELL_BEAST_SPAWN":
+
+                filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp));
+                break;
+
+            case "A67_WITCH_KING_DROP_GOOD":
+            case "A67_WITCH_KING_DROP_BAD":
+
+                filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp).Concat(new[] { $"{packet.Key}_1" }).Concat(temp).Concat(new[] { $"{packet.Key}_2" }));
+                break;
+
+            case "A67_WITCH_KING_DROP_GOOD_PROMO":
+            case "A67_WITCH_KING_DROP_BAD_PROMO":
+            case "A40_NALKA_SPAWN":
+                filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp).Concat(new[] { $"{packet.Key}_1" }));
+                break;
+
+            default:
+
+                temp.Add(hero);
+                filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp).Concat(new[] { $"{packet.Key}_1" }).Concat(temp));
+                break;
+        }
     }
 }
 
