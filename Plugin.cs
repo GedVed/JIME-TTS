@@ -6,7 +6,7 @@ using System.Collections;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine.SceneManagement;
+
 
 
 
@@ -20,7 +20,6 @@ namespace ReadTextMod{
     {
         public static ManualLogSource Log;
         private static AudioSource AudioSource;
-        private bool SceneLoadPatchTriggered = false;
         private static string AudioFolder = Path.Combine(Paths.PluginPath, "ReadTextMod\\TTS");
         private static bool IsPlayingQueue = false;
         private static bool HasStartedLoading = false;
@@ -44,7 +43,6 @@ namespace ReadTextMod{
             AudioSource = audioObj.AddComponent<AudioSource>();
             MethodResolver.Initialize();
             harmony.PatchAll();
-            SceneManager.sceneLoaded += OnSceneLoaded;
             MethodResolver.MessagePopupMethodExecuted += OnMessagePopupMethodExecuted;
             MethodResolver.MessagePopupCloseExecuted += OnMessagePopupClose;
             MethodResolver.UIMapExecuted += OnUIMapDisplay;
@@ -59,22 +57,8 @@ namespace ReadTextMod{
                 MethodResolver.MessagePopupCloseExecuted -= OnMessagePopupClose;
                 MethodResolver.UIMapExecuted -= OnUIMapDisplay;
             }
-
-            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            if (SceneLoadPatchTriggered)
-            {
-                Log.LogInfo($"Scene loaded: {scene.name}. Skipping patch attempt as it was already triggered.");
-                return;
-            }
-
-            Log.LogInfo($"Scene loaded: {scene.name}. Checking for MessagePopup GameObjects.");
-            SceneLoadPatchTriggered = true;
-            MethodResolver?.TryPatchMessageMethodsNow();
-        }
 
         private void OnUIMapDisplay(object sender, UIMapExecuted e)
         {

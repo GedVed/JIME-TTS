@@ -43,7 +43,7 @@ public class MethodResolver
         "OnContinueButtonClicked"
     }; 
 
-    private static readonly float PatchTimeout = 30f; // Timeout after 30 seconds
+    private static readonly float PatchTimeout = 60f; // Timeout after 30 seconds
 
     // State
     private readonly Harmony Harmony;
@@ -51,7 +51,7 @@ public class MethodResolver
     private readonly Dictionary<MethodInfo, string> MethodNameMap = new Dictionary<MethodInfo, string>(); // Maps MethodInfo to methodName
     private readonly List<string> PatchedMethods = new List<string>(); 
     private bool IsMessagePatched = false;
-
+    private bool IsAdventurePatched = false;
     private bool IsUIMapPatched = false;
     
     public MethodResolver(Harmony harmony, MonoBehaviour monoBehaviour)
@@ -68,44 +68,109 @@ public class MethodResolver
 
     // Coroutine to retry patching until any GameObject is found or timeout
     private IEnumerator TryPatchMethods()
+{
+    ReadText.Log.LogInfo($"Starting patching attempt for methods on GameObjects: {string.Join(", ", TargetGameObjectMessageNames)}, UI_Map, and Adventure.");
+    float startTime = Time.time;
+    while (Time.time - startTime < PatchTimeout)
     {
-        ReadText.Log.LogInfo($"Starting patching attempt for methods on GameObjects: {string.Join(UIMapTargetObject,", ", TargetGameObjectMessageNames)}.");
-        float startTime = Time.time;
-        while (Time.time - startTime < PatchTimeout)
+        if (IsMessagePatched && IsUIMapPatched && IsAdventurePatched)
         {
-            if (IsMessagePatched && IsUIMapPatched)
-            {
-                ReadText.Log.LogInfo("Patching already completed, skipping coroutine attempt.");
-                yield break;
-            }
-
-            bool messagePatchedThisFrame = TryPatchMessageMethodsNow();
-            bool uiMapPatchedThisFrame = TryPatchUIMapMethodsNow();
-
-            if (messagePatchedThisFrame)
-            {
-                IsMessagePatched = true;
-                ReadText.Log.LogInfo("MessagePopup methods patched successfully.");
-            }
-
-            if (uiMapPatchedThisFrame)
-            {
-                IsUIMapPatched = true;
-                ReadText.Log.LogInfo("UIMapScene methods patched successfully.");
-            }
-
-            if (IsMessagePatched && IsUIMapPatched)
-            {
-                ReadText.Log.LogInfo("Patching completed successfully for both MessagePopup and UIMapScene via coroutine, no further attempts needed.");
-                yield break;
-            }
-            
-            yield return null; // Wait for next frame
+            ReadText.Log.LogInfo("Patching already completed, skipping coroutine attempt.");
+            yield break;
         }
 
-        ReadText.Log.LogError($"Failed to find any of the GameObjects ({string.Join(", ", TargetGameObjectMessageNames)}) after {PatchTimeout} seconds.");
+        bool messagePatchedThisFrame = TryPatchMessageMethodsNow();
+        bool uiMapPatchedThisFrame = TryPatchUIMapMethodsNow();
+        bool adventurePatchedThisFrame = TryPatchAdventureMethodsNow();
+
+        if (messagePatchedThisFrame)
+        {
+            IsMessagePatched = true;
+            ReadText.Log.LogInfo("MessagePopup methods patched successfully.");
+        }
+
+        if (uiMapPatchedThisFrame)
+        {
+            IsUIMapPatched = true;
+            ReadText.Log.LogInfo("UIMapScene methods patched successfully.");
+        }
+
+        if (adventurePatchedThisFrame)
+        {
+            IsAdventurePatched = true;
+            ReadText.Log.LogInfo("Adventure methods patched successfully.");
+        }
+
+        if (IsMessagePatched && IsUIMapPatched && IsAdventurePatched)
+        {
+            ReadText.Log.LogInfo("Patching completed successfully for MessagePopup, UIMapScene, and Adventure via coroutine, no further attempts needed.");
+            yield break;
+        }
+        
+        yield return null; // Wait for next frame
     }
 
+    ReadText.Log.LogError($"Failed to complete patching after {PatchTimeout} seconds. Status: MessagePatched={IsMessagePatched}, UIMapPatched={IsUIMapPatched}, AdventurePatched={IsAdventurePatched}.");
+}
+
+   public bool TryPatchAdventureMethodsNow()
+{
+    if (IsAdventurePatched)
+    {
+        ReadText.Log.LogInfo("TryPatchAdventureMethodsNow: Patching already completed, skipping attempt.");
+        return true;
+    }
+
+    GameObject[] allGameObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+    GameObject targetObject = allGameObjects.FirstOrDefault(go => go.GetComponent<Adventure>() != null);
+    if (targetObject != null)
+    {
+        ReadText.Log.LogInfo($"Found target GameObject: {targetObject.name} with Adventure component. Proceeding with patching.");
+        PatchAdventureMethods(targetObject);
+        IsAdventurePatched = true;
+        return true;
+    }
+    return false;
+}
+
+private void PatchAdventureMethods(GameObject targetObject)
+{
+    if (IsAdventurePatched)
+    {
+        ReadText.Log.LogWarning("PatchAdventureMethods called but methods are already patched. Skipping.");
+        return;
+    }
+
+    Type componentType = typeof(Adventure);
+    MethodInfo targetMethod = componentType.GetMethod("CoroutineRevealTerrains", BindingFlags.Public | BindingFlags.Instance);
+    if (targetMethod == null)
+    {
+        ReadText.Log.LogError("Method CoroutineRevealTerrains not found in Adventure.");
+        return;
+    }
+
+    try
+    {
+        MethodNameMap[targetMethod] = "CoroutineRevealTerrains";
+        var prefix = new HarmonyMethod(typeof(Adventure_Patch).GetMethod(nameof(Adventure_Patch.PrefixCoroutineRevealTerrains), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public));
+        Harmony.Patch(targetMethod, prefix: prefix);
+
+        var patchInfo = Harmony.GetPatchInfo(targetMethod);
+        if (patchInfo?.Prefixes?.Any(p => p.owner == Harmony.Id) == true)
+        {
+            PatchedMethods.Add("CoroutineRevealTerrains");
+            ReadText.Log.LogInfo("Successfully patched method CoroutineRevealTerrains in Adventure.");
+        }
+        else
+        {
+            ReadText.Log.LogError("Failed to verify patch for method CoroutineRevealTerrains in Adventure.");
+        }
+    }
+    catch (Exception ex)
+    {
+        ReadText.Log.LogError($"Exception while patching method CoroutineRevealTerrains: {ex.Message}");
+    }
+}
     
     public bool TryPatchMessageMethodsNow()
     {
@@ -115,7 +180,7 @@ public class MethodResolver
             return true;
         }
 
-        
+
         GameObject[] allGameObjects = Resources.FindObjectsOfTypeAll<GameObject>();
         foreach (var gameObjectName in TargetGameObjectMessageNames)
         {
@@ -154,6 +219,8 @@ public class MethodResolver
         return false;
 
     }
+    
+
 
     private void PatchTargetUIMapMethods(GameObject targetObject)
     {
@@ -183,7 +250,7 @@ public class MethodResolver
                 ReadText.Log.LogWarning($"Method {methodName} not found in {componentType.Name}.");
                 continue;
             }
-                PatchPostfix(MethodNameMap, targetMethod, methodName, Harmony, PatchedMethods, ref successfulPatches, componentType);
+            PatchPostfix(MethodNameMap, targetMethod, methodName, Harmony, PatchedMethods, ref successfulPatches, componentType);
         }
 
         ReadText.Log.LogInfo($"Patching completed: {successfulPatches}/{TargetMethodUIMapNames.Count} methods patched successfully.");
@@ -424,8 +491,30 @@ public class MethodResolver
         }
     }
 }
-
-
+[HarmonyPatch(typeof(Adventure), "CoroutineRevealTerrains")]
+static class Adventure_Patch
+{
+    public static void PrefixCoroutineRevealTerrains(GameNode[] terrainNodes)
+    {
+        if (terrainNodes == null) { ReadText.Log.LogInfo("terrainNodes is null in CoroutineRevealTerrains."); return; }
+        ReadText.Log.LogInfo($"CoroutineRevealTerrains completed with {terrainNodes.Length} terrain nodes:");
+        for (int i = 0; i < terrainNodes.Length; i++)
+        {
+            var terrainNode = terrainNodes[i];
+            if (terrainNode == null)
+            {
+                ReadText.Log.LogInfo($"terrainNodes[{i}] is null");
+                continue;
+            }
+            if (terrainNode.TerrainModel == null)
+            {
+                ReadText.Log.LogInfo($"terrainNodes[{i}].TerrainModel is null");
+                continue;
+            }
+            ReadText.Log.LogInfo($"terrainNodes[{i}].TerrainModel.Id = {terrainNode.TerrainModel.Id}");
+        }
+    }
+}
 
 public class MessagePopupMethodExecutedEventArgs : EventArgs
 {
