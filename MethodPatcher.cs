@@ -81,7 +81,7 @@ public class MethodResolver
 
         bool messagePatchedThisFrame = TryPatchMessageMethodsNow();
         bool uiMapPatchedThisFrame = TryPatchUIMapMethodsNow();
-        bool adventurePatchedThisFrame = TryPatchAdventureMethodsNow();
+        bool adventurePatchedThisFrame = AdventurePatch.TryPatchAdventureMethodsNow(ref IsAdventurePatched, MethodNameMap, PatchedMethods, Harmony);
 
         if (messagePatchedThisFrame)
         {
@@ -113,64 +113,6 @@ public class MethodResolver
     ReadText.Log.LogError($"Failed to complete patching after {PatchTimeout} seconds. Status: MessagePatched={IsMessagePatched}, UIMapPatched={IsUIMapPatched}, AdventurePatched={IsAdventurePatched}.");
 }
 
-   public bool TryPatchAdventureMethodsNow()
-{
-    if (IsAdventurePatched)
-    {
-        ReadText.Log.LogInfo("TryPatchAdventureMethodsNow: Patching already completed, skipping attempt.");
-        return true;
-    }
-
-    GameObject[] allGameObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-    GameObject targetObject = allGameObjects.FirstOrDefault(go => go.GetComponent<Adventure>() != null);
-    if (targetObject != null)
-    {
-        ReadText.Log.LogInfo($"Found target GameObject: {targetObject.name} with Adventure component. Proceeding with patching.");
-        PatchAdventureMethods(targetObject);
-        IsAdventurePatched = true;
-        return true;
-    }
-    return false;
-}
-
-private void PatchAdventureMethods(GameObject targetObject)
-{
-    if (IsAdventurePatched)
-    {
-        ReadText.Log.LogWarning("PatchAdventureMethods called but methods are already patched. Skipping.");
-        return;
-    }
-
-    Type componentType = typeof(Adventure);
-    MethodInfo targetMethod = componentType.GetMethod("CoroutineRevealTerrains", BindingFlags.Public | BindingFlags.Instance);
-    if (targetMethod == null)
-    {
-        ReadText.Log.LogError("Method CoroutineRevealTerrains not found in Adventure.");
-        return;
-    }
-
-    try
-    {
-        MethodNameMap[targetMethod] = "CoroutineRevealTerrains";
-        var prefix = new HarmonyMethod(typeof(Adventure_Patch).GetMethod(nameof(Adventure_Patch.PrefixCoroutineRevealTerrains), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public));
-        Harmony.Patch(targetMethod, prefix: prefix);
-
-        var patchInfo = Harmony.GetPatchInfo(targetMethod);
-        if (patchInfo?.Prefixes?.Any(p => p.owner == Harmony.Id) == true)
-        {
-            PatchedMethods.Add("CoroutineRevealTerrains");
-            ReadText.Log.LogInfo("Successfully patched method CoroutineRevealTerrains in Adventure.");
-        }
-        else
-        {
-            ReadText.Log.LogError("Failed to verify patch for method CoroutineRevealTerrains in Adventure.");
-        }
-    }
-    catch (Exception ex)
-    {
-        ReadText.Log.LogError($"Exception while patching method CoroutineRevealTerrains: {ex.Message}");
-    }
-}
     
     public bool TryPatchMessageMethodsNow()
     {

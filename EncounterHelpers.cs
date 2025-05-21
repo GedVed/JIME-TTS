@@ -5,6 +5,8 @@ using HarmonyLib;
 using FFG.Common;
 using UnityEngine;
 using FFG.JIME;
+using System.Text.RegularExpressions;
+using System;
 
 public static class EncounterHelpers
 {
@@ -15,7 +17,14 @@ public static class EncounterHelpers
 
 
         List<string> filepaths = [];
+        
+       
         UILocalizationPacket localizationText = Traverse.Create(MessagePopupObject).Field("_localizedText").GetValue<UILocalizationPacket>();
+         if (packet.Key == "PLACE_TILE")
+        {
+            localizationText.KeyInfo.CompressedValue = Regex.Replace(localizationText.KeyInfo.CompressedValue, @"\bPLACE_TILE\b", "PLACE_TILE_NO_FLAVOR");
+            ReadText.Log.LogInfo($"{localizationText.KeyInfo.CompressedValue}");
+        }
 
         switch (MessagePopupObject.name)
         {
@@ -64,6 +73,7 @@ public static class EncounterHelpers
 
                 var textPart = ValueCleaner(localizationText);
 
+
                 switch (packet.Key)
                 {
                     case "UI_EXPLORE_TILE_WITH_INTRO_FORMATTED":
@@ -75,8 +85,15 @@ public static class EncounterHelpers
 
                     case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
                     case "PLACE_TILE_NO_FLAVOR":
-
+                    
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
+                        break;
+                    
+                    case "PLACE_TILE": 
+
+                        localizationText.KeyInfo.Key = "PLACE_TILE_NO_FLAVOR";
+                        AudioQueueCorrectOrder(localizationText, textPart, filepaths);
+                        filepaths = AudioQueueForPlaceTile(filepaths, 2); //numberStartingIndex: 2 → [A35_INTO, PLACE_TILE_NO_FLAVOR_1, 220A, PLACE_TILE_NO_FLAVOR_2]
                         break;
 
                     case "PLACE_SEARCH":
@@ -122,7 +139,7 @@ public static class EncounterHelpers
                             filepaths.Add(firstInsert.RawText);
                         }
                         break;
-                        
+
                     case string s when s.Contains("ENEMIES"): //case "A1_M1_E1_ENEMIES":
 
                         filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
@@ -137,14 +154,15 @@ public static class EncounterHelpers
 
                     case string s when s.Contains("OBJECTIVE"):
 
-                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
                         RemoveBracket(filepaths);
                         if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(1) is { IsUsed: true } secondInsert)
                         {
                             filepaths.Add(secondInsert.CompressedIntData.ToString());
                         }
                         break;
-
+                    //A35_TIMER_THREAT //[-1|-1|A35_TIMER_THREAT|1|8|0|A34_TWO|0] 
+                    //[-1|-1|A35_SPAWN_WIGHTS|1|8|0|A34_TWO|0]
                     default:
 
                         filepaths.Add(packet.Key);
@@ -159,7 +177,6 @@ public static class EncounterHelpers
 
         return filepaths;
     }
-
 
     private static void EnemySpawn(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths, IEnumerable<string> textPart)
     {
@@ -255,6 +272,52 @@ public static class EncounterHelpers
         filepaths.AddRange(new[] { $"{prefix}_1" }.Concat(temp).Concat(new[] { $"{prefix}_2" }));
 
     }
+
+    private static List<string> AudioQueueForPlaceTile(List<string> filepaths, int numberStartingIndex)
+    {
+        
+        // Define the known strings
+        const string placeTile1 = "PLACE_TILE_NO_FLAVOR_1";
+        const string placeTile2 = "PLACE_TILE_NO_FLAVOR_2";
+
+        // Find the string that starts with a number
+        string numberStarting = filepaths.FirstOrDefault(s => s.Length > 0 && char.IsDigit(s[0]))
+            ?? throw new InvalidOperationException("No string starting with a number found.");
+
+        // Find random text (not PLACE_TILE_NO_FLAVOR_1, PLACE_TILE_NO_FLAVOR_2, or number-starting)
+        string randomText = filepaths.FirstOrDefault(s => s != placeTile1 && s != placeTile2 && s != numberStarting)
+            ?? throw new InvalidOperationException("No random text found.");
+
+        // Create a new list with the desired order
+        var result = new List<string>();
+
+        // Add items up to numberStartingIndex
+        int currentIndex = 0;
+        result.Add(randomText); // First: random text
+        currentIndex++;
+        if (currentIndex == numberStartingIndex)
+        {
+            result.Add(numberStarting);
+            currentIndex++;
+        }
+        result.Add(placeTile1); // PLACE_TILE_NO_FLAVOR_1
+        currentIndex++;
+        if (currentIndex == numberStartingIndex)
+        {
+            result.Add(numberStarting);
+            currentIndex++;
+        }
+        result.Add(placeTile2); // PLACE_TILE_NO_FLAVOR_2
+        if (currentIndex == numberStartingIndex)
+        {
+            result.Add(numberStarting);
+        }
+
+        // Filter to include only items present in the input
+        return result.Where(s => filepaths.Contains(s)).ToList();
+    }
+
+
 
     private static void AudioQueueCorrectOrderEnemy(LocalizationPacket packet, string hero, List<string> filepaths)
     {
