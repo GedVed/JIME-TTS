@@ -11,16 +11,22 @@ using System;
 public static class EncounterHelpers
 {
 
+    private static readonly List<string> EnemyActivations = new List<string>{"ENEMY_GOBLIN_ACTIVATION","ENEMY_RUFFIAN_ACTIVATION","ENEMY_ORC_MARAUDER_ACTIVATION","ENEMY_ORC_HUNTER_ACTIVATION",
+            "ENEMY_HUNGRY_WARG_ACTIVATION","ENEMY_WIGHT_ACTIVATION","ENEMY_HILL_TROLL_ACTIVATION","ENEMY_ATARIN_ACTIVATION","ENEMY_ULUK_ACTIVATION","ENEMY_GULGOTAR_ACTIVATION",
+            "ENEMY_GIANT_SPIDER_ACTIVATION","ENEMY_PIT_GOBLIN_ACTIVATION","ENEMY_ORC_TASKMASTER_ACTIVATION","ENEMY_SHADOWMAN_ACTIVATION","ENEMY_NAMELESS_THING_ACTIVATION",
+            "ENEMY_CAVE_TROLL_ACTIVATION","ENEMY_UNGOLIANT_ACTIVATION","ENEMY_BALROG_ACTIVATION","ENEMY_SOLDIER_ACTIVATION","ENEMY_URUK_ACTIVATION","ENEMY_FELL_BEAST_ACTIVATION",
+            "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION"};
+
 
     public static List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet)
     {
 
 
         List<string> filepaths = [];
-        
-       
+
+
         UILocalizationPacket localizationText = Traverse.Create(MessagePopupObject).Field("_localizedText").GetValue<UILocalizationPacket>();
-         if (packet.Key == "PLACE_TILE")
+        if (packet.Key == "PLACE_TILE")
         {
             localizationText.KeyInfo.CompressedValue = Regex.Replace(localizationText.KeyInfo.CompressedValue, @"\bPLACE_TILE\b", "PLACE_TILE_NO_FLAVOR");
             ReadText.Log.LogInfo($"{localizationText.KeyInfo.CompressedValue}");
@@ -44,7 +50,7 @@ public static class EncounterHelpers
 
                 filepaths.Add(packet.Key);
 
-                if (ReadText.enemyActivations.Contains(packet.Key))
+                if (EnemyActivations.Contains(packet.Key))
                 {
                     string hero = FindHero(localizationText);
                     if (!string.IsNullOrEmpty(hero))
@@ -85,11 +91,11 @@ public static class EncounterHelpers
 
                     case "UI_SECTION_REVEAL_PLACE_TILE_FORMATTED":
                     case "PLACE_TILE_NO_FLAVOR":
-                    
+
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
                         break;
-                    
-                    case "PLACE_TILE": 
+
+                    case "PLACE_TILE":
 
                         localizationText.KeyInfo.Key = "PLACE_TILE_NO_FLAVOR";
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
@@ -276,7 +282,7 @@ public static class EncounterHelpers
     private static List<string> AudioQueueForPlaceTile(List<string> filepaths, int numberStartingIndex)
     {
         
-        // Define the known strings
+        
         const string placeTile1 = "PLACE_TILE_NO_FLAVOR_1";
         const string placeTile2 = "PLACE_TILE_NO_FLAVOR_2";
 
@@ -313,12 +319,9 @@ public static class EncounterHelpers
             result.Add(numberStarting);
         }
 
-        // Filter to include only items present in the input
         return result.Where(s => filepaths.Contains(s)).ToList();
     }
-
-
-
+    
     private static void AudioQueueCorrectOrderEnemy(LocalizationPacket packet, string hero, List<string> filepaths)
     {
 

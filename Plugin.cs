@@ -12,8 +12,9 @@ using System.IO;
 
 
 
-namespace ReadTextMod{
 
+namespace ReadTextMod
+{
 
     [BepInPlugin("GedVed.lotr.readtext", "LOTR Read Text Mod", "1.0.0")]
     public class ReadText : BaseUnityPlugin
@@ -24,65 +25,58 @@ namespace ReadTextMod{
         private static bool IsPlayingQueue = false;
         private static bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
-        public static MethodResolver MethodResolver = null;
-
-
-        public static List<string> enemyActivations = new List<string>{"ENEMY_GOBLIN_ACTIVATION","ENEMY_RUFFIAN_ACTIVATION","ENEMY_ORC_MARAUDER_ACTIVATION","ENEMY_ORC_HUNTER_ACTIVATION",
-            "ENEMY_HUNGRY_WARG_ACTIVATION","ENEMY_WIGHT_ACTIVATION","ENEMY_HILL_TROLL_ACTIVATION","ENEMY_ATARIN_ACTIVATION","ENEMY_ULUK_ACTIVATION","ENEMY_GULGOTAR_ACTIVATION",
-            "ENEMY_GIANT_SPIDER_ACTIVATION","ENEMY_PIT_GOBLIN_ACTIVATION","ENEMY_ORC_TASKMASTER_ACTIVATION","ENEMY_SHADOWMAN_ACTIVATION","ENEMY_NAMELESS_THING_ACTIVATION",
-            "ENEMY_CAVE_TROLL_ACTIVATION","ENEMY_UNGOLIANT_ACTIVATION","ENEMY_BALROG_ACTIVATION","ENEMY_SOLDIER_ACTIVATION","ENEMY_URUK_ACTIVATION","ENEMY_FELL_BEAST_ACTIVATION",
-            "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION"};
-
+        private static ReadText Instance;
 
         void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Log.LogWarning("Another instance of ReadText already exists. Destroying this duplicate.");
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
             var harmony = new Harmony("GedVed.lotr.readtext");
             Log = Logger;
-            MethodResolver = new MethodResolver(harmony, this);
             GameObject audioObj = new GameObject("SoundPlayer");
             AudioSource = audioObj.AddComponent<AudioSource>();
-            MethodResolver.Initialize();
+            DontDestroyOnLoad(audioObj);
+            MethodPatcher.Initialize(harmony, this);
             harmony.PatchAll();
-            MethodResolver.MessagePopupMethodExecuted += OnMessagePopupMethodExecuted;
-            MethodResolver.MessagePopupCloseExecuted += OnMessagePopupClose;
-            MethodResolver.UIMapExecuted += OnUIMapDisplay;
-            Log.LogInfo("ReadTextMod Loaded!");
+            MethodPatcher.Instance.MessagePopupMethodExecuted += OnMessagePopupMethodExecuted;
+            MethodPatcher.Instance.MessagePopupCloseExecuted += OnMessagePopupClose;
+            MethodPatcher.Instance.UIMapExecuted += OnUIMapDisplay;
+            Log.LogInfo("JIME_TTS Loaded!");
         }
 
         private void OnDestroy()
         {
-            if (MethodResolver != null)
+            if (Instance == this)
             {
-                MethodResolver.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
-                MethodResolver.MessagePopupCloseExecuted -= OnMessagePopupClose;
-                MethodResolver.UIMapExecuted -= OnUIMapDisplay;
+                Log.LogInfo("Destroying ReadText instance.");
+                if (MethodPatcher.Instance != null)
+                {
+                    MethodPatcher.Instance.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
+                    MethodPatcher.Instance.MessagePopupCloseExecuted -= OnMessagePopupClose;
+                    MethodPatcher.Instance.UIMapExecuted -= OnUIMapDisplay;
+                }
+                Instance = null;
             }
         }
 
-
-        private void OnUIMapDisplay(object sender, UIMapExecuted e)
+        private void OnUIMapDisplay(object sender, UIMapExecutedEventArgs e)
         {
 
             StopPlayback();
-
-            List<string> filepaths = [];
-            if (e.GameObject != null)
+            if (e.GameObject != null && !string.IsNullOrEmpty(e.LocalizationPacket?.key))
             {
-                if (!string.IsNullOrEmpty(e.LocalizationPacket.key))
-                {
-                    filepaths.Add(e.LocalizationPacket.key);
-                }
-
-                if (filepaths.Count > 0)
-                {
-                    e.Instance.StartCoroutine(LoadAndPlayWrapper(new Queue<string>(filepaths)));
-
-                }
-                else
-                {
-                    Log.LogInfo("Unable to extract path from key");
-                }
+                e.Instance?.StartCoroutine(LoadAndPlayWrapper(new Queue<string>(new[] { e.LocalizationPacket.key })));
             }
+            else
+            {
+                Log.LogInfo("Unable to extract path from UIMap key");
+            }
+
         }
         private void OnMessagePopupClose(object sender, MessagePopupCloseExecutedEventArgs e)
         {
@@ -92,7 +86,8 @@ namespace ReadTextMod{
 
         private void OnMessagePopupMethodExecuted(object sender, MessagePopupMethodExecutedEventArgs e)
         {
-            if (e.GameObject != null)
+
+            if (e.GameObject != null && e.Instance != null)
             {
                 List<string> filepaths = EncounterHelpers.KeyInfoResolver(e.Instance, e.LocalizationPacket);
 
@@ -106,6 +101,7 @@ namespace ReadTextMod{
                     Log.LogInfo("Unable to extract path from KeyInfo");
                 }
             }
+
         }
 
         private static IEnumerator LoadSound(Queue<string> filepaths)
@@ -182,15 +178,15 @@ namespace ReadTextMod{
 
         private static void StopPlayback()
         {
-             if(AudioSource != null && AudioSource.isPlaying)
+            if (AudioSource != null && AudioSource.isPlaying)
             {
                 AudioSource.Stop();
                 AudioQueue.Clear();
-                IsPlayingQueue = false; 
+                IsPlayingQueue = false;
                 Log.LogInfo("Audio queue playback stopped");
             }
         }
-    
+
     }
 }
 
