@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using FFG.JIME;
+using FFG.JIME.Actions;
 
 namespace ReadTextMod.Patches
 {
@@ -15,6 +17,8 @@ namespace ReadTextMod.Patches
         protected abstract string[] TargetGameObjectNames { get; }
         protected abstract Type TargetComponentType { get; }
         protected abstract bool UsesDynamicPatching { get; }
+
+        protected abstract List<string> TargetMethodNames { get; }
 
         // Properties for patching status and data
         protected bool IsPatched { get; private set; }
@@ -30,7 +34,9 @@ namespace ReadTextMod.Patches
             IsPatched = false;
         }
 
-        public static float GetTimeout() 
+        
+        
+        public static float GetTimeout()
         {
             return PatchTimeout;
         }
@@ -102,9 +108,62 @@ namespace ReadTextMod.Patches
 
         protected virtual void PatchMethods(GameObject targetObject)
         {
-            // Default implementation for dynamic patching; override in derived classes
-            ReadText.Log.LogWarning($"{GetType().Name}.PatchMethods called but not implemented.");
+            Component component = targetObject.GetComponent(TargetComponentType);
+            if (component == null)
+            {
+                ReadText.Log.LogError($"UIMap component not found on {targetObject.name}.");
+                return;
+            }
+
+            int successfulPatches = 0;
+            foreach (var methodName in TargetMethodNames)
+            {
+                MethodInfo targetMethod = TargetComponentType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                if (targetMethod == null)
+                {
+                    ReadText.Log.LogWarning($"Method {methodName} not found in {TargetComponentType.Name} with specified BindingFlags.");
+                    continue;
+                }
+
+                try
+                {
+                    MethodNameMap[targetMethod] = methodName;
+                    var postfix = new HarmonyMethod(GetType().GetMethod(nameof(Postfix), BindingFlags.Static | BindingFlags.NonPublic));
+                    HarmonyInstance.Patch(targetMethod, postfix: postfix);
+
+                    var patchInfo = Harmony.GetPatchInfo(targetMethod);
+                    if (patchInfo?.Postfixes?.Any(p => p.owner == HarmonyInstance.Id) == true)
+                    {
+                        PatchedMethods.Add(methodName);
+                        successfulPatches++;
+                        LogPatchSuccess(methodName, successfulPatches, TargetMethodNames.Count);
+                    }
+                    else
+                    {
+                        LogPatchFailure(methodName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogPatchFailure(methodName, ex);
+                }
+            }
         }
+
+        protected static void Postfix(MethodInfo __originalMethod, object __instance, object[] __args)
+        {
+            ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
+        }
+        protected static void Postfix(GameNode[] terrainNodes )
+        {
+            ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
+        }
+
+        protected static void Postfix(object __instance)
+        {
+            ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
+        }
+
 
         protected GameObject FindTargetGameObject()
         {

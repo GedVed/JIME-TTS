@@ -10,7 +10,7 @@ namespace ReadTextMod.Patches
 {
         public class MessagePopupPatch : BasePatch
         {
-            private static readonly List<string> TargetMethodNames = new List<string>
+            protected override List<string> TargetMethodNames => new List<string>
             {
             "ShowNormalMessage",
             "ShowConfirmCancelMessage",
@@ -76,7 +76,7 @@ namespace ReadTextMod.Patches
                 }
             }
 
-            private static void Postfix(MethodInfo __originalMethod, object __instance, object[] __args)
+            protected new static void Postfix(MethodInfo __originalMethod, object __instance, object[] __args)
             {
                 if (__originalMethod == null || __instance == null)
                 {
