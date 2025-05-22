@@ -24,47 +24,36 @@ namespace ReadTextMod.Patches
 
             protected override string[] TargetGameObjectNames => ["MessagePopup_New"];
             protected override Type TargetComponentType => typeof(MessagePopup);
-            protected override bool UsesDynamicPatching => true;
+            
 
             public MessagePopupPatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
                 : base(methodNameMap, patchedMethods, harmony)
             {
             }
 
-            protected new static void Postfix(MethodInfo __originalMethod, object __instance, object[] __args)
+            protected new static void Postfix(object __instance, object[] __args)
             {
-                if (__originalMethod == null || __instance == null)
-                {
-                    ReadText.Log.LogWarning($"Postfix: Invalid method or instance for {__originalMethod?.DeclaringType.Name}.{__originalMethod?.Name}.");
-                    return;
-                }
-
+    
                 if (MethodPatcher.Instance == null)
                 {
                     ReadText.Log.LogWarning($"Postfix: MethodPatcher instance not found.");
                     return;
                 }
 
-                var methodNameMap = MethodPatcher.Instance.GetMethodNameMap();
-                if (methodNameMap.TryGetValue(__originalMethod, out string methodName))
+                if (__instance is MessagePopup messagePopup && messagePopup.gameObject != null)
                 {
-                    if (__instance is MessagePopup messagePopup && messagePopup.gameObject != null)
-                    {
-                        var gameObject = messagePopup.gameObject;
-                        var isActive = gameObject.activeInHierarchy;
-                        var packet = __args.OfType<LocalizationPacket>().FirstOrDefault();
-                        MethodPatcher.Instance.RaiseMessagePopupMethodExecuted(methodName, gameObject, isActive, messagePopup, packet);
-                        ReadText.Log.LogInfo($"Postfix executed for {methodName} on {gameObject.name} (Active: {isActive}).");
-                    }
-                    else
-                    {
-                        ReadText.Log.LogWarning($"Postfix: Instance is not MessagePopup or gameObject is null for {__originalMethod.DeclaringType.Name}.{__originalMethod.Name}.");
-                    }
+                    var gameObject = messagePopup.gameObject;
+                    var isActive = gameObject.activeInHierarchy;
+                    var packet = __args.OfType<LocalizationPacket>().FirstOrDefault();
+                    MethodPatcher.Instance.RaiseMessagePopupMethodExecuted(gameObject, isActive, messagePopup, packet);
+                    
                 }
                 else
                 {
-                    ReadText.Log.LogWarning($"Method {__originalMethod.DeclaringType.Name}.{__originalMethod.Name} executed but not found in methodName map. Available keys: {string.Join(", ", methodNameMap.Values)}");
+                    ReadText.Log.LogWarning($"Postfix: Instance is not MessagePopup or gameObject is null.");
                 }
+                
+                
             }
         }
     }

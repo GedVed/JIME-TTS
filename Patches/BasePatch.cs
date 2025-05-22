@@ -16,7 +16,7 @@ namespace ReadTextMod.Patches
         // Abstract properties for patch-specific configuration
         protected abstract string[] TargetGameObjectNames { get; }
         protected abstract Type TargetComponentType { get; }
-        protected abstract bool UsesDynamicPatching { get; }
+        
 
         protected abstract List<string> TargetMethodNames { get; }
 
@@ -48,14 +48,8 @@ namespace ReadTextMod.Patches
                 return true;
             }
 
-            if (UsesDynamicPatching)
-            {
-                return TryPatchDynamic();
-            }
-            else
-            {
-                return TryPatchAttributeBased();
-            }
+            return TryPatchDynamic();
+        
         }
 
         protected virtual bool TryPatchDynamic()
@@ -89,29 +83,14 @@ namespace ReadTextMod.Patches
             return false;
         }
 
-        protected virtual bool TryPatchAttributeBased()
-        {
-            // For attribute-based patching, assume GameObject is found and Harmony.PatchAll() handles patching
-            GameObject[] allGameObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-            bool foundAnyTarget = TargetGameObjectNames.Any(name => allGameObjects.Any(go => go.name == name && go.GetComponent(TargetComponentType) != null));
 
-            if (foundAnyTarget)
-            {
-                IsPatched = true;
-                ReadText.Log.LogInfo($"{GetType().Name} attribute-based patching marked complete.");
-                return true;
-            }
-
-           // ReadText.Log.LogWarning($"No target GameObjects found for attribute-based patching in {GetType().Name}.");
-            return false;
-        }
 
         protected virtual void PatchMethods(GameObject targetObject)
         {
             Component component = targetObject.GetComponent(TargetComponentType);
             if (component == null)
             {
-                ReadText.Log.LogError($"UIMap component not found on {targetObject.name}.");
+                ReadText.Log.LogError($"{TargetComponentType} component not found on {targetObject.name}.");
                 return;
             }
 
@@ -150,16 +129,11 @@ namespace ReadTextMod.Patches
             }
         }
 
-        protected static void Postfix(MethodInfo __originalMethod, object __instance, object[] __args)
+        protected static void Postfix(object __instance, object[] __args)
         {
             ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
         }
         protected static void Postfix(GameNode[] terrainNodes )
-        {
-            ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
-        }
-
-        protected static void Postfix(object __instance)
         {
             ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
         }

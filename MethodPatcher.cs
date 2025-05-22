@@ -16,18 +16,13 @@ using ReadTextMod.Patches;
 public class MethodPatcher
 {
     public static MethodPatcher Instance { get; private set; }
+    
     // State
     private readonly Harmony Harmony;
-    private readonly Dictionary<MethodInfo, string> MethodNameMap = new Dictionary<MethodInfo, string>(); // Maps MethodInfo to methodName
-    private readonly List<string> PatchedMethods = new List<string>();
+    private readonly Dictionary<MethodInfo, string> MethodNameMap = []; // Maps MethodInfo to methodName
+    private readonly List<string> PatchedMethods = [];
     private readonly List<BasePatch> Patches;
     
-    /*private bool IsMessagePatched = false;
-    private bool IsAdventurePatched = false;
-    private bool IsUIMapPatched = false;
-    private bool IsMessageClosePatched = false;*/
-
-
 
     //Events
     public event EventHandler<MessagePopupMethodExecutedEventArgs> MessagePopupMethodExecuted;
@@ -85,10 +80,10 @@ public class MethodPatcher
             ReadText.Log.LogError($"Failed to complete patching after {BasePatch.GetTimeout()} seconds. methodNameMap contains: {string.Join(", ", MethodNameMap.Values)}");
         }
     
-    public void RaiseMessagePopupMethodExecuted(string methodName, GameObject gameObject, bool isActive, MessagePopup instance, LocalizationPacket packet)
+    public void RaiseMessagePopupMethodExecuted(GameObject gameObject, bool isActive, MessagePopup instance, LocalizationPacket packet)
     {
-        MessagePopupMethodExecuted?.Invoke(this, new MessagePopupMethodExecutedEventArgs(methodName, gameObject, isActive, instance, packet));
-        ReadText.Log.LogInfo($"MessagePopupMethodExecuted invoked for {methodName}.");
+        MessagePopupMethodExecuted?.Invoke(this, new MessagePopupMethodExecutedEventArgs( gameObject, isActive, instance, packet));
+        ReadText.Log.LogInfo($"MessagePopupMethodExecuted invoked.");
     }
 
     public void RaiseMessagePopupCloseExecuted(bool isActive, MessagePopup instance)
@@ -97,10 +92,10 @@ public class MethodPatcher
         ReadText.Log.LogInfo("MessagePopupCloseExecuted invoked.");
     }
 
-    public void RaiseUIMapExecuted(string methodName, GameObject gameObject, bool isActive, UIMapScene instance, UILocalizationPacket packet)
+    public void RaiseUIMapExecuted(GameObject gameObject, bool isActive, UIMapScene instance, UILocalizationPacket packet)
     {
-        UIMapExecuted?.Invoke(this, new UIMapExecutedEventArgs(methodName, gameObject, isActive, instance, packet));
-        ReadText.Log.LogInfo($"UIMapExecuted invoked for {methodName}.");
+        UIMapExecuted?.Invoke(this, new UIMapExecutedEventArgs( gameObject, isActive, instance, packet));
+        ReadText.Log.LogInfo($"UIMapExecuted invoked.");
     }
     
     // Expose methodNameMap for patches to access
@@ -116,15 +111,13 @@ public class MethodPatcher
 
 public class MessagePopupMethodExecutedEventArgs : EventArgs
 {
-    public string MethodName { get; }
     public GameObject GameObject { get; }
     public bool IsActive { get; }
     public MessagePopup Instance { get; }
     public LocalizationPacket LocalizationPacket { get; }
 
-    public MessagePopupMethodExecutedEventArgs(string methodName, GameObject gameObject, bool isActive, MessagePopup instance, LocalizationPacket packet)
+    public MessagePopupMethodExecutedEventArgs(GameObject gameObject, bool isActive, MessagePopup instance, LocalizationPacket packet)
     {
-        MethodName = methodName;
         GameObject = gameObject;
         IsActive = isActive;
         Instance = instance;
@@ -147,15 +140,14 @@ public class MessagePopupCloseExecutedEventArgs : EventArgs
 
 public class UIMapExecutedEventArgs : EventArgs
 {
-    public string MethodName { get; }
+    
     public GameObject GameObject { get; }
     public bool IsActive { get; }
     public UIMapScene Instance { get; }
     public UILocalizationPacket LocalizationPacket{ get; }
 
-    public UIMapExecutedEventArgs(string methodName, GameObject gameObject, bool isActive, UIMapScene instance, UILocalizationPacket packet)
+    public UIMapExecutedEventArgs( GameObject gameObject, bool isActive, UIMapScene instance, UILocalizationPacket packet)
     {
-        MethodName = methodName;
         GameObject = gameObject;
         IsActive = isActive;
         Instance = instance;

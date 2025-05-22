@@ -14,21 +14,16 @@ namespace ReadTextMod.Patches
 
         protected override string[] TargetGameObjectNames => ["MessagePopup_New"];
         protected override Type TargetComponentType => typeof(MessagePopup);
-        protected override bool UsesDynamicPatching => true;
+        
 
         public MessagePopupClosePatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
             : base(methodNameMap, patchedMethods, harmony)
         {
         }
 
-        protected new static void Postfix(object __instance)
+        protected new static void Postfix(object __instance, object[] __args)
         {
-            if (__instance == null)
-            {
-                ReadText.Log.LogWarning($"Postfix: Invalid instance for MessagePopup.Close.");
-                return;
-            }
-
+            
             if (MethodPatcher.Instance == null)
             {
                 ReadText.Log.LogWarning($"Postfix: MethodPatcher instance not found.");
@@ -39,7 +34,6 @@ namespace ReadTextMod.Patches
             {
                 var isActive = messagePopup.gameObject.activeInHierarchy;
                 MethodPatcher.Instance.RaiseMessagePopupCloseExecuted(isActive, messagePopup);
-                ReadText.Log.LogInfo($"Postfix executed for CloseCallbacks on {messagePopup.gameObject.name} (Active: {isActive}).");
             }
             else
             {
