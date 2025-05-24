@@ -27,7 +27,7 @@ namespace ReadTextMod.Patches
                 ReadText.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
                 return;
             }
-            EventCoordinator.Instance.RaiseTerrainTilesExecuted(terrainNodes);
+            EventCoordinator.Instance.RaiseTerrainNodesExecuted(terrainNodes);
         }
     }
 }

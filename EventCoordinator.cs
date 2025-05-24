@@ -57,7 +57,7 @@ public class EventCoordinator
         ReadText.Log.LogInfo($"UIMapExecuted invoked.");
     }
 
-    public void RaiseTerrainTilesExecuted(GameNode[] gameNodes)
+    public void RaiseTerrainNodesExecuted(GameNode[] gameNodes)
     {
         TerrainNodesExecuted?.Invoke(this, new TerrainNodesEventArgs(gameNodes));
         ReadText.Log.LogInfo($"Terrain Nodes executed.");

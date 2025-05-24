@@ -11,7 +11,7 @@ namespace ReadTextMod.Patches
 {
     public abstract class BasePatch
     {
-        protected static readonly float PatchTimeout = 60f;
+        protected static readonly float PatchTimeout = 3600f;
 
         // Abstract properties for patch-specific configuration
         protected abstract string[] TargetGameObjectNames { get; }
