@@ -18,7 +18,7 @@ public static class EncounterHelpers
             "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION"};
 
 
-    public static List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet)
+    public static List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet, GameNode[] gameNodes)
     {
 
 
@@ -94,12 +94,20 @@ public static class EncounterHelpers
 
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
                         break;
+                    
+                    case "UI_TERRAIN_NODES_REVEAL_FORMATTED":
+
+                        if (gameNodes != null && gameNodes.Length >= 1)
+                        {
+                            AudioQueueSpawnTerrain(localizationText, gameNodes, filepaths);
+                        }
+                        break;
 
                     case "PLACE_TILE":
 
                         localizationText.KeyInfo.Key = "PLACE_TILE_NO_FLAVOR";
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
-                        filepaths = AudioQueueForPlaceTile(filepaths, 2); //numberStartingIndex: 2 → [A35_INTO, PLACE_TILE_NO_FLAVOR_1, 220A, PLACE_TILE_NO_FLAVOR_2]
+                        filepaths = AudioQueuePlaceTile(filepaths, 2); //numberStartingIndex: 2 → [A35_INTO, PLACE_TILE_NO_FLAVOR_1, 220A, PLACE_TILE_NO_FLAVOR_2]
                         break;
 
                     case "PLACE_SEARCH":
@@ -183,6 +191,9 @@ public static class EncounterHelpers
 
         return filepaths;
     }
+
+   
+
 
     private static void EnemySpawn(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths, IEnumerable<string> textPart)
     {
@@ -268,6 +279,34 @@ public static class EncounterHelpers
 
     }
 
+    private static void AudioQueueSpawnTerrain(UILocalizationPacket localizationText, GameNode[] gameNodes, List<string> filepaths)
+    {
+        filepaths.Add(localizationText.KeyInfo.Key);
+
+        var countWithOrder = new List<(string Key, int Count)>();
+        var seenKeys = new HashSet<string>();
+
+        foreach (var gameNode in gameNodes)
+        {
+            string key = gameNode.TerrainModel.NameKey;
+            if (seenKeys.Add(key)) // Add returns true if key is new
+            {
+                countWithOrder.Add((key, 1));
+            }
+            else
+            {
+                var index = countWithOrder.FindIndex(x => x.Key == key);
+                countWithOrder[index] = (key, countWithOrder[index].Count + 1);
+            }
+        }
+
+        foreach (var (key, count) in countWithOrder)
+        {
+            filepaths.Add(count.ToString());
+            filepaths.Add(count > 1 ? key + "_PLURAL" : key);
+        }
+    }
+
     private static void AudioQueueCorrectOrder(UILocalizationPacket localizationText, IEnumerable<string> textPart, List<string> filepaths)
     {
 
@@ -279,14 +318,14 @@ public static class EncounterHelpers
 
     }
 
-    private static List<string> AudioQueueForPlaceTile(List<string> filepaths, int numberStartingIndex)
+    private static List<string> AudioQueuePlaceTile(List<string> filepaths, int numberStartingIndex)
     {
         
         
         const string placeTile1 = "PLACE_TILE_NO_FLAVOR_1";
         const string placeTile2 = "PLACE_TILE_NO_FLAVOR_2";
 
-        // Find the string that starts with a number
+        
         string numberStarting = filepaths.FirstOrDefault(s => s.Length > 0 && char.IsDigit(s[0]))
             ?? throw new InvalidOperationException("No string starting with a number found.");
 
@@ -294,10 +333,10 @@ public static class EncounterHelpers
         string randomText = filepaths.FirstOrDefault(s => s != placeTile1 && s != placeTile2 && s != numberStarting)
             ?? throw new InvalidOperationException("No random text found.");
 
-        // Create a new list with the desired order
+        
         var result = new List<string>();
 
-        // Add items up to numberStartingIndex
+        
         int currentIndex = 0;
         result.Add(randomText); // First: random text
         currentIndex++;

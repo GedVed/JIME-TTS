@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using FFG.JIME;
-using FFG.JIME.Actions;
+
 
 namespace ReadTextMod.Patches
 {
@@ -138,12 +138,6 @@ namespace ReadTextMod.Patches
             ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
         }
 
-
-        protected GameObject FindTargetGameObject()
-        {
-            return Resources.FindObjectsOfTypeAll<GameObject>()
-                .FirstOrDefault(go => TargetGameObjectNames.Contains(go.name) && go.GetComponent(TargetComponentType) != null);
-        }
 
         protected void LogPatchSuccess(string methodName, int successfulPatches, int totalMethods)
         {

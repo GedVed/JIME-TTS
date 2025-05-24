@@ -26,6 +26,7 @@ namespace ReadTextMod
         private static bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
         private static ReadText Instance;
+        private EventCoordinator EventCoordinator;
 
         void Awake()
         {
@@ -38,14 +39,21 @@ namespace ReadTextMod
             Instance = this;
             var harmony = new Harmony("GedVed.lotr.readtext");
             Log = Logger;
+            //AudioSource
             GameObject audioObj = new GameObject("SoundPlayer");
             AudioSource = audioObj.AddComponent<AudioSource>();
             DontDestroyOnLoad(audioObj);
+            //Harmony Patch
             MethodPatcher.Initialize(harmony, this);
             harmony.PatchAll();
-            MethodPatcher.Instance.MessagePopupMethodExecuted += OnMessagePopupMethodExecuted;
+            //Event Coordinator
+            EventCoordinator = new EventCoordinator(this);
+            //Events
+            MethodPatcher.Instance.MessagePopupMethodExecuted += (sender, e) => EventCoordinator.WrapMessagePopup(sender, e, OnMessagePopupMethodExecuted);
+            MethodPatcher.Instance.TerrainNodesExecuted += EventCoordinator.WrapTerrainNodes;
             MethodPatcher.Instance.MessagePopupCloseExecuted += OnMessagePopupClose;
             MethodPatcher.Instance.UIMapExecuted += OnUIMapDisplay;
+        
             Log.LogInfo("JIME_TTS Loaded!");
         }
 
@@ -59,6 +67,7 @@ namespace ReadTextMod
                     MethodPatcher.Instance.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
                     MethodPatcher.Instance.MessagePopupCloseExecuted -= OnMessagePopupClose;
                     MethodPatcher.Instance.UIMapExecuted -= OnUIMapDisplay;
+                    MethodPatcher.Instance.TerrainNodesExecuted -= EventCoordinator.WrapTerrainNodes;
                 }
                 Instance = null;
             }
@@ -78,6 +87,7 @@ namespace ReadTextMod
             }
 
         }
+
         private void OnMessagePopupClose(object sender, MessagePopupCloseExecutedEventArgs e)
         {
 
@@ -89,7 +99,7 @@ namespace ReadTextMod
 
             if (e.GameObject != null && e.Instance != null)
             {
-                List<string> filepaths = EncounterHelpers.KeyInfoResolver(e.Instance, e.LocalizationPacket);
+                List<string> filepaths = EncounterHelpers.KeyInfoResolver(e.Instance, e.LocalizationPacket, e.GameNodes);
 
                 if (filepaths.Count > 0)
                 {
