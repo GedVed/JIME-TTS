@@ -4,8 +4,9 @@ using System.Reflection;
 using System.Collections.Generic;
 using System;
 using System.Collections;
-using ReadTextMod;
-using ReadTextMod.Patches;
+using JIME_TTS_MOD.Patches;
+using JIME_TTS_MOD;
+
 
 
 public class MethodPatcher
@@ -22,7 +23,7 @@ public class MethodPatcher
     {
         Instance = this;
         Harmony = harmony ?? throw new ArgumentNullException(nameof(harmony));
-        ReadText.Log.LogInfo("MethodPatcher instance created.");
+        JIME_TTS.Log.LogInfo("MethodPatcher instance created.");
         Patches = new List<BasePatch>
         {
             new TerrainNodesPatch(MethodNameMap, PatchedMethods, Harmony),
@@ -42,7 +43,7 @@ public class MethodPatcher
     // Coroutine to retry patching until any GameObject is found or timeout
     private IEnumerator TryPatchMethods()
     {
-        ReadText.Log.LogInfo("Starting patching attempt for MessagePopup, UIMapScene, and Adventure.");
+        JIME_TTS.Log.LogInfo("Starting patching attempt for MessagePopup, UIMapScene, and Adventure.");
         float startTime = Time.time;
         while (Time.time - startTime < BasePatch.GetTimeout())
         {
@@ -57,14 +58,14 @@ public class MethodPatcher
 
             if (allPatched)
             {
-                ReadText.Log.LogInfo($"Patching completed for all patches. methodNameMap contains: {string.Join(", ", MethodNameMap.Values)}");
+                JIME_TTS.Log.LogInfo($"Patching completed for all patches. methodNameMap contains: {string.Join(", ", MethodNameMap.Values)}");
                 yield break;
             }
 
             yield return null;
         }
 
-        ReadText.Log.LogError($"Failed to complete patching after {BasePatch.GetTimeout()} seconds. methodNameMap contains: {string.Join(", ", MethodNameMap.Values)}");
+        JIME_TTS.Log.LogError($"Failed to complete patching after {BasePatch.GetTimeout()} seconds. methodNameMap contains: {string.Join(", ", MethodNameMap.Values)}");
     }
 
     public Dictionary<MethodInfo, string> GetMethodNameMap()

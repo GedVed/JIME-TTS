@@ -4,7 +4,7 @@ using System.Reflection;
 using System;
 using FFG.JIME;
 
-namespace ReadTextMod.Patches
+namespace JIME_TTS_MOD.Patches
 {
     public class TerrainNodesPatch : BasePatch
     {
@@ -24,7 +24,7 @@ namespace ReadTextMod.Patches
 
             if (EventCoordinator.Instance == null)
             {
-                ReadText.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
+                JIME_TTS.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
                 return;
             }
             EventCoordinator.Instance.RaiseTerrainNodesExecuted(terrainNodes);

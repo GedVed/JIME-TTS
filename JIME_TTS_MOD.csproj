@@ -12,8 +12,9 @@
       https://nuget.bepinex.dev/v3/index.json;
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <RootNamespace>ReadTextMod</RootNamespace>
+    <RootNamespace>JIME_TTS_MOD</RootNamespace>
   </PropertyGroup>
+
 
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />

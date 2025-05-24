@@ -1,12 +1,10 @@
 using FFG.Common;
 using HarmonyLib;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Linq;
 using System;
 
-namespace ReadTextMod.Patches
+namespace JIME_TTS_MOD.Patches
 {
     public class MessagePopupClosePatch : BasePatch
     {
@@ -26,7 +24,7 @@ namespace ReadTextMod.Patches
             
             if (EventCoordinator.Instance == null)
             {
-                ReadText.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
+                JIME_TTS.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
                 return;
             }
 
@@ -37,7 +35,7 @@ namespace ReadTextMod.Patches
             }
             else
             {
-                ReadText.Log.LogWarning($"Postfix: Instance is not MessagePopup or gameObject is null for MessagePopup.Close.");
+                JIME_TTS.Log.LogWarning($"Postfix: Instance is not MessagePopup or gameObject is null for MessagePopup.Close.");
             }
         }
     }

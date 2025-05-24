@@ -6,7 +6,7 @@ using System.Linq;
 using System;
 using FFG.Common;
 
-namespace ReadTextMod.Patches
+namespace JIME_TTS_MOD.Patches
 {
         public class MessagePopupPatch : BasePatch
         {
@@ -36,7 +36,7 @@ namespace ReadTextMod.Patches
     
                 if (EventCoordinator.Instance == null)
                 {
-                    ReadText.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
+                    JIME_TTS.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
                     return;
                 }
 
@@ -50,7 +50,7 @@ namespace ReadTextMod.Patches
                 }
                 else
                 {
-                    ReadText.Log.LogWarning($"Postfix: Instance is not MessagePopup or gameObject is null.");
+                    JIME_TTS.Log.LogWarning($"Postfix: Instance is not MessagePopup or gameObject is null.");
                 }
                 
                 

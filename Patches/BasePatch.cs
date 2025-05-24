@@ -7,7 +7,8 @@ using System.Linq;
 using FFG.JIME;
 
 
-namespace ReadTextMod.Patches
+
+namespace JIME_TTS_MOD.Patches
 {
     public abstract class BasePatch
     {
@@ -44,7 +45,7 @@ namespace ReadTextMod.Patches
         {
             if (IsPatched)
             {
-               // ReadText.Log.LogInfo($"{GetType().Name} patching already completed, skipping attempt.");
+               // JIME_TTS.Log.LogInfo($"{GetType().Name} patching already completed, skipping attempt.");
                 return true;
             }
 
@@ -62,24 +63,24 @@ namespace ReadTextMod.Patches
                 GameObject targetObject = allGameObjects.FirstOrDefault(go => go.GetComponent(TargetComponentType) != null);
                 if (targetObject != null)
                 {
-                    ReadText.Log.LogInfo($"Found target GameObject: {targetObject.name} (Active: {targetObject.activeInHierarchy}, Scene: {targetObject.scene.name}) for {GetType().Name}.");
+                    JIME_TTS.Log.LogInfo($"Found target GameObject: {targetObject.name} (Active: {targetObject.activeInHierarchy}, Scene: {targetObject.scene.name}) for {GetType().Name}.");
                     PatchMethods(targetObject);
                     foundAnyTarget = true;
                 }
                 else
                 {
-                    //ReadText.Log.LogInfo($"GameObject {gameObjectName} not found or lacks {TargetComponentType.Name} component for {GetType().Name}.");
+                    //JIME_TTS.Log.LogInfo($"GameObject {gameObjectName} not found or lacks {TargetComponentType.Name} component for {GetType().Name}.");
                 }
             }
 
             if (foundAnyTarget)
             {
                 IsPatched = true;
-                ReadText.Log.LogInfo($"{GetType().Name} patching completed.");
+                JIME_TTS.Log.LogInfo($"{GetType().Name} patching completed.");
                 return true;
             }
 
-           // ReadText.Log.LogWarning($"No target GameObjects found for {GetType().Name}.");
+           // JIME_TTS.Log.LogWarning($"No target GameObjects found for {GetType().Name}.");
             return false;
         }
 
@@ -90,7 +91,7 @@ namespace ReadTextMod.Patches
             Component component = targetObject.GetComponent(TargetComponentType);
             if (component == null)
             {
-                ReadText.Log.LogError($"{TargetComponentType} component not found on {targetObject.name}.");
+                JIME_TTS.Log.LogError($"{TargetComponentType} component not found on {targetObject.name}.");
                 return;
             }
 
@@ -100,7 +101,7 @@ namespace ReadTextMod.Patches
                 MethodInfo targetMethod = TargetComponentType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
                 if (targetMethod == null)
                 {
-                    ReadText.Log.LogWarning($"Method {methodName} not found in {TargetComponentType.Name} with specified BindingFlags.");
+                    JIME_TTS.Log.LogWarning($"Method {methodName} not found in {TargetComponentType.Name} with specified BindingFlags.");
                     continue;
                 }
 
@@ -131,29 +132,29 @@ namespace ReadTextMod.Patches
 
         protected static void Postfix(object __instance, object[] __args)
         {
-            ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
+            JIME_TTS.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
         }
         protected static void Postfix(GameNode[] terrainNodes )
         {
-            ReadText.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
+            JIME_TTS.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
         }
 
 
         protected void LogPatchSuccess(string methodName, int successfulPatches, int totalMethods)
         {
-            ReadText.Log.LogInfo($"Successfully patched method {methodName} in {TargetComponentType.Name}.");
-            ReadText.Log.LogInfo($"{GetType().Name} patching completed: {successfulPatches}/{totalMethods} methods patched.");
+            JIME_TTS.Log.LogInfo($"Successfully patched method {methodName} in {TargetComponentType.Name}.");
+            JIME_TTS.Log.LogInfo($"{GetType().Name} patching completed: {successfulPatches}/{totalMethods} methods patched.");
         }
 
         protected void LogPatchFailure(string methodName, Exception ex = null)
         {
             if (ex != null)
             {
-                ReadText.Log.LogError($"Exception while patching method {methodName} in {TargetComponentType.Name}: {ex.Message}\n{ex.StackTrace}");
+                JIME_TTS.Log.LogError($"Exception while patching method {methodName} in {TargetComponentType.Name}: {ex.Message}\n{ex.StackTrace}");
             }
             else
             {
-                ReadText.Log.LogError($"Failed to verify patch for method {methodName} in {TargetComponentType.Name}.");
+                JIME_TTS.Log.LogError($"Failed to verify patch for method {methodName} in {TargetComponentType.Name}.");
             }
         }
     }

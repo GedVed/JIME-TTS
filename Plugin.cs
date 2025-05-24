@@ -9,31 +9,31 @@ using System.IO;
 
 
 
-namespace ReadTextMod
+namespace JIME_TTS_MOD
 {
 
-    [BepInPlugin("GedVed.lotr.readtext", "LOTR Read Text Mod", "1.0.0")]
-    public class ReadText : BaseUnityPlugin
+    [BepInPlugin("GedVed.JIME_TTS", "JIME TTS Mod", "1.0.0")]
+    public class JIME_TTS : BaseUnityPlugin
     {
         public static ManualLogSource Log;
         private static AudioSource AudioSource;
-        private static string AudioFolder = Path.Combine(Paths.PluginPath, "ReadTextMod\\TTS");
+        private static string AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS\\TTS");
         private static bool IsPlayingQueue = false;
         private static bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
-        private static ReadText Instance;
+        private static JIME_TTS Instance;
         
 
         void Awake()
         {
             if (Instance != null && Instance != this)
             {
-                Log.LogWarning("Another instance of ReadText already exists. Destroying this duplicate.");
+                Log.LogWarning("Another instance of JIME_TTS already exists. Destroying this duplicate.");
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
-            var harmony = new Harmony("GedVed.lotr.readtext");
+            var harmony = new Harmony("GedVed.JIME_TTS");
             Log = Logger;
             //AudioSource
             GameObject audioObj = new GameObject("SoundPlayer");

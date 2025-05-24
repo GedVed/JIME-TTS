@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
-using ReadTextMod;
 using HarmonyLib;
 using FFG.Common;
 using UnityEngine;
 using FFG.JIME;
 using System.Text.RegularExpressions;
 using System;
+using JIME_TTS_MOD;
+
 
 public static class EncounterHelpers
 {
@@ -29,7 +30,7 @@ public static class EncounterHelpers
         if (packet.Key == "PLACE_TILE")
         {
             localizationText.KeyInfo.CompressedValue = Regex.Replace(localizationText.KeyInfo.CompressedValue, @"\bPLACE_TILE\b", "PLACE_TILE_NO_FLAVOR");
-            ReadText.Log.LogInfo($"{localizationText.KeyInfo.CompressedValue}");
+            JIME_TTS.Log.LogInfo($"{localizationText.KeyInfo.CompressedValue}");
         }
 
         switch (MessagePopupObject.name)
@@ -185,7 +186,7 @@ public static class EncounterHelpers
                 break;
 
             default:
-                ReadText.Log.LogError("MessagePopupObject does not exists or is invalid");
+                JIME_TTS.Log.LogError("MessagePopupObject does not exists or is invalid");
                 break;
         }
 
@@ -242,7 +243,7 @@ public static class EncounterHelpers
         }
         else
         {
-            ReadText.Log.LogInfo("Compressed value does not exists or is mismatched");
+            JIME_TTS.Log.LogInfo("Compressed value does not exists or is mismatched");
             return null;
         }
 

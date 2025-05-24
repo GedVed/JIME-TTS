@@ -1,9 +1,8 @@
 using System;
 using FFG.Common;
 using FFG.JIME;
-using ReadTextMod;
 using UnityEngine;
-
+using JIME_TTS_MOD;
 
 
 
@@ -25,42 +24,42 @@ public class EventCoordinator
 
 
 
-    public EventCoordinator(ReadText plugin)
+    public EventCoordinator(JIME_TTS plugin)
     {
 
         Instance = this;
         TerrainNodeResult = null;
-        ReadText.Log.LogInfo("Event Coordinator instance created.");
+        JIME_TTS.Log.LogInfo("Event Coordinator instance created.");
         
     }
 
-    public static void Initialize(ReadText readText)
+    public static void Initialize(JIME_TTS JIME_TTS)
     {
-        var coordinator = new EventCoordinator(readText);
+        var coordinator = new EventCoordinator(JIME_TTS);
     }
 
     public void RaiseMessagePopupMethodExecuted(GameObject gameObject, bool isActive, MessagePopup instance, LocalizationPacket packet, GameNode[] gameNodes = null)
     {
         MessagePopupMethodExecuted?.Invoke(this, new MessagePopupMethodExecutedEventArgs(gameObject, isActive, instance, packet, gameNodes));
-        ReadText.Log.LogInfo($"MessagePopupMethodExecuted invoked.");
+        JIME_TTS.Log.LogInfo($"MessagePopupMethodExecuted invoked.");
     }
 
     public void RaiseMessagePopupCloseExecuted(bool isActive, MessagePopup instance)
     {
         MessagePopupCloseExecuted?.Invoke(this, new MessagePopupCloseExecutedEventArgs(isActive, instance));
-        ReadText.Log.LogInfo("MessagePopupCloseExecuted invoked.");
+        JIME_TTS.Log.LogInfo("MessagePopupCloseExecuted invoked.");
     }
 
     public void RaiseUIMapExecuted(GameObject gameObject, bool isActive, UIMapScene instance, UILocalizationPacket packet)
     {
         UIMapExecuted?.Invoke(this, new UIMapExecutedEventArgs(gameObject, isActive, instance, packet));
-        ReadText.Log.LogInfo($"UIMapExecuted invoked.");
+        JIME_TTS.Log.LogInfo($"UIMapExecuted invoked.");
     }
 
     public void RaiseTerrainNodesExecuted(GameNode[] gameNodes)
     {
         TerrainNodesExecuted?.Invoke(this, new TerrainNodesEventArgs(gameNodes));
-        ReadText.Log.LogInfo($"Terrain Nodes executed.");
+        JIME_TTS.Log.LogInfo($"Terrain Nodes executed.");
     }
 
 
@@ -78,7 +77,7 @@ public class EventCoordinator
         }
         catch (Exception ex)
         {
-            ReadText.Log.LogInfo($"Error in TerrainNodes: {ex.Message}");
+            JIME_TTS.Log.LogInfo($"Error in TerrainNodes: {ex.Message}");
             throw;
         }
     }
@@ -107,20 +106,20 @@ public class EventCoordinator
                 }
                 else
                 {
-                    ReadText.Log.LogInfo("TerrainNodesExecuted not triggered or no nodes");
+                    JIME_TTS.Log.LogInfo("TerrainNodesExecuted not triggered or no nodes");
                 }
                 // Call the original handler with the updated event args
                 originalHandler(sender, e);
             }
             else
             {
-                ReadText.Log.LogInfo("GameObject or Instance is null in MessagePopupMethodExecuted");
+                JIME_TTS.Log.LogInfo("GameObject or Instance is null in MessagePopupMethodExecuted");
                 originalHandler(sender, e); // Call original handler
             }
         }
         catch (Exception ex)
         {
-            ReadText.Log.LogInfo($"Error in MessagePopup: {ex.Message}");
+            JIME_TTS.Log.LogInfo($"Error in MessagePopup: {ex.Message}");
             throw;
         }
     }
