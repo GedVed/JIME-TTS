@@ -33,7 +33,7 @@ namespace ReadTextMod.Patches
             if (__instance is MessagePopup messagePopup && messagePopup.gameObject != null)
             {
                 var isActive = messagePopup.gameObject.activeInHierarchy;
-                MethodPatcher.Instance.RaiseMessagePopupCloseExecuted(isActive, messagePopup);
+                EventCoordinator.Instance.RaiseMessagePopupCloseExecuted(isActive, messagePopup);
             }
             else
             {

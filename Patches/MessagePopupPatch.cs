@@ -45,7 +45,7 @@ namespace ReadTextMod.Patches
                     var gameObject = messagePopup.gameObject;
                     var isActive = gameObject.activeInHierarchy;
                     var packet = __args.OfType<LocalizationPacket>().FirstOrDefault();
-                    MethodPatcher.Instance.RaiseMessagePopupMethodExecuted(gameObject, isActive, messagePopup, packet);
+                    EventCoordinator.Instance.RaiseMessagePopupMethodExecuted(gameObject, isActive, messagePopup, packet);
                     
                 }
                 else

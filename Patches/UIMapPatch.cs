@@ -44,7 +44,7 @@ namespace ReadTextMod.Patches
                 var gameObject = uiMap.gameObject;
                 var isActive = gameObject.activeInHierarchy;
                 var packet = uiMap.Label_AdventureEpilogue;
-                MethodPatcher.Instance.RaiseUIMapExecuted(gameObject, isActive, uiMap, packet);
+                EventCoordinator.Instance.RaiseUIMapExecuted(gameObject, isActive, uiMap, packet);
                 
             }
             else

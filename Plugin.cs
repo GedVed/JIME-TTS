@@ -9,10 +9,6 @@ using System.IO;
 
 
 
-
-
-
-
 namespace ReadTextMod
 {
 
@@ -26,7 +22,7 @@ namespace ReadTextMod
         private static bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
         private static ReadText Instance;
-        private EventCoordinator EventCoordinator;
+        
 
         void Awake()
         {
@@ -47,12 +43,12 @@ namespace ReadTextMod
             MethodPatcher.Initialize(harmony, this);
             harmony.PatchAll();
             //Event Coordinator
-            EventCoordinator = new EventCoordinator(this);
+            EventCoordinator.Initialize(this);
             //Events
-            MethodPatcher.Instance.MessagePopupMethodExecuted += (sender, e) => EventCoordinator.WrapMessagePopup(sender, e, OnMessagePopupMethodExecuted);
-            MethodPatcher.Instance.TerrainNodesExecuted += EventCoordinator.WrapTerrainNodes;
-            MethodPatcher.Instance.MessagePopupCloseExecuted += OnMessagePopupClose;
-            MethodPatcher.Instance.UIMapExecuted += OnUIMapDisplay;
+            EventCoordinator.Instance.MessagePopupMethodExecuted += (sender, e) => EventCoordinator.Instance.WrapMessagePopup(sender, e, OnMessagePopupMethodExecuted);
+            EventCoordinator.Instance.TerrainNodesExecuted += EventCoordinator.Instance.WrapTerrainNodes;
+            EventCoordinator.Instance.MessagePopupCloseExecuted += OnMessagePopupClose;
+            EventCoordinator.Instance.UIMapExecuted += OnUIMapDisplay;
         
             Log.LogInfo("JIME_TTS Loaded!");
         }
@@ -62,12 +58,12 @@ namespace ReadTextMod
             if (Instance == this)
             {
                 Log.LogInfo("Destroying ReadText instance.");
-                if (MethodPatcher.Instance != null)
+                if (EventCoordinator.Instance != null)
                 {
-                    MethodPatcher.Instance.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
-                    MethodPatcher.Instance.MessagePopupCloseExecuted -= OnMessagePopupClose;
-                    MethodPatcher.Instance.UIMapExecuted -= OnUIMapDisplay;
-                    MethodPatcher.Instance.TerrainNodesExecuted -= EventCoordinator.WrapTerrainNodes;
+                    EventCoordinator.Instance.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
+                    EventCoordinator.Instance.MessagePopupCloseExecuted -= OnMessagePopupClose;
+                    EventCoordinator.Instance.UIMapExecuted -= OnUIMapDisplay;
+                    EventCoordinator.Instance.TerrainNodesExecuted -= EventCoordinator.Instance.WrapTerrainNodes;
                 }
                 Instance = null;
             }

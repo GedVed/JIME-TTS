@@ -21,7 +21,7 @@ namespace ReadTextMod.Patches
 
         protected new static void Postfix(GameNode[] terrainNodes)
         {
-                MethodPatcher.Instance.RaiseTerrainTilesExecuted(terrainNodes);
+            EventCoordinator.Instance.RaiseTerrainTilesExecuted(terrainNodes);
         }
     }
 }
