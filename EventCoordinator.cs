@@ -115,7 +115,7 @@ public class EventCoordinator
             else
             {
                 ReadText.Log.LogInfo("GameObject or Instance is null in MessagePopupMethodExecuted");
-                originalHandler(sender, e); // Call original handler even if no processing is done
+                originalHandler(sender, e); // Call original handler
             }
         }
         catch (Exception ex)

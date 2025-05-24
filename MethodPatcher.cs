@@ -25,7 +25,7 @@ public class MethodPatcher
         ReadText.Log.LogInfo("MethodPatcher instance created.");
         Patches = new List<BasePatch>
         {
-            new TerrainNodes(MethodNameMap, PatchedMethods, Harmony),
+            new TerrainNodesPatch(MethodNameMap, PatchedMethods, Harmony),
             new MessagePopupPatch(MethodNameMap, PatchedMethods, Harmony),
             new MessagePopupClosePatch(MethodNameMap, PatchedMethods, Harmony),
             new UIMapPatch(MethodNameMap, PatchedMethods, Harmony),

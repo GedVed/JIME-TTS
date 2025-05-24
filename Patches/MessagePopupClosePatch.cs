@@ -24,9 +24,9 @@ namespace ReadTextMod.Patches
         protected new static void Postfix(object __instance, object[] __args)
         {
             
-            if (MethodPatcher.Instance == null)
+            if (EventCoordinator.Instance == null)
             {
-                ReadText.Log.LogWarning($"Postfix: MethodPatcher instance not found.");
+                ReadText.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
                 return;
             }
 
