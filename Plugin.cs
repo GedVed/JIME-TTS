@@ -17,9 +17,9 @@ namespace JIME_TTS_MOD
     {
         public static ManualLogSource Log;
         private static AudioSource AudioSource;
-        private static string AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS\\TTS");
+        private static readonly string AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS\\TTS");
         private static bool IsPlayingQueue = false;
-        private static bool HasStartedLoading = false;
+        private static readonly bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
         private static JIME_TTS Instance;
         
@@ -48,7 +48,7 @@ namespace JIME_TTS_MOD
             EventCoordinator.Instance.MessagePopupMethodExecuted += (sender, e) => EventCoordinator.Instance.WrapMessagePopup(sender, e, OnMessagePopupMethodExecuted);
             EventCoordinator.Instance.TerrainNodesExecuted += EventCoordinator.Instance.WrapTerrainNodes;
             EventCoordinator.Instance.MessagePopupCloseExecuted += OnMessagePopupClose;
-            EventCoordinator.Instance.UIMapExecuted += OnUIMapDisplay;
+            EventCoordinator.Instance.UIMapExecuted += OnUIMapDisplayExecuted;
         
             Log.LogInfo("JIME_TTS Loaded!");
         }
@@ -57,23 +57,23 @@ namespace JIME_TTS_MOD
         {
             if (Instance == this)
             {
-                Log.LogInfo("Destroying ReadText instance.");
+                Log.LogInfo("Destroying JIME_TTS instance.");
                 if (EventCoordinator.Instance != null)
                 {
                     EventCoordinator.Instance.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
                     EventCoordinator.Instance.MessagePopupCloseExecuted -= OnMessagePopupClose;
-                    EventCoordinator.Instance.UIMapExecuted -= OnUIMapDisplay;
+                    EventCoordinator.Instance.UIMapExecuted -= OnUIMapDisplayExecuted;
                     EventCoordinator.Instance.TerrainNodesExecuted -= EventCoordinator.Instance.WrapTerrainNodes;
                 }
                 Instance = null;
             }
         }
 
-        private void OnUIMapDisplay(object sender, UIMapExecutedEventArgs e)
+        private void OnUIMapDisplayExecuted(object sender, UIMapExecutedEventArgs e)
         {
 
             StopPlayback();
-            if (e.GameObject != null && !string.IsNullOrEmpty(e.LocalizationPacket?.key))
+            if (!string.IsNullOrEmpty(e.LocalizationPacket?.key))
             {
                 e.Instance?.StartCoroutine(LoadAndPlayWrapper(new Queue<string>(new[] { e.LocalizationPacket.key })));
             }

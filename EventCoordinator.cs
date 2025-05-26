@@ -41,15 +41,15 @@ public class EventCoordinator
         JIME_TTS.Log.LogInfo($"MessagePopupMethodExecuted invoked.");
     }
 
-    public void RaiseMessagePopupCloseExecuted(bool isActive, MessagePopup instance)
+    public void RaiseMessagePopupCloseExecuted(bool isActive)
     {
-        MessagePopupCloseExecuted?.Invoke(this, new MessagePopupCloseExecutedEventArgs(isActive, instance));
+        MessagePopupCloseExecuted?.Invoke(this, new MessagePopupCloseExecutedEventArgs(isActive));
         JIME_TTS.Log.LogInfo("MessagePopupCloseExecuted invoked.");
     }
 
-    public void RaiseUIMapExecuted(GameObject gameObject, bool isActive, UIMapScene instance, UILocalizationPacket packet)
+    public void RaiseUIMapExecuted(UIMapScene uiMap, UILocalizationPacket packet)
     {
-        UIMapExecuted?.Invoke(this, new UIMapExecutedEventArgs(gameObject, isActive, instance, packet));
+        UIMapExecuted?.Invoke(this, new UIMapExecutedEventArgs(uiMap, packet));
         JIME_TTS.Log.LogInfo($"UIMapExecuted invoked.");
     }
 
@@ -147,27 +147,23 @@ public class MessagePopupMethodExecutedEventArgs : EventArgs
 public class MessagePopupCloseExecutedEventArgs : EventArgs
 {
     public bool IsActive { get; }
-    public MessagePopup Instance { get; }
+    
 
-    public MessagePopupCloseExecutedEventArgs(bool isActive, MessagePopup instance)
+    public MessagePopupCloseExecutedEventArgs(bool isActive)
     {
         IsActive = isActive;
-        Instance = instance;
+
     }
 }
 
 public class UIMapExecutedEventArgs : EventArgs
 {
-
-    public GameObject GameObject { get; }
-    public bool IsActive { get; }
-    public UIMapScene Instance { get; }
+       public UIMapScene Instance { get; }
     public UILocalizationPacket LocalizationPacket { get; }
 
-    public UIMapExecutedEventArgs(GameObject gameObject, bool isActive, UIMapScene instance, UILocalizationPacket packet)
+    public UIMapExecutedEventArgs(UIMapScene instance, UILocalizationPacket packet)
     {
-        GameObject = gameObject;
-        IsActive = isActive;
+
         Instance = instance;
         LocalizationPacket = packet;
     }

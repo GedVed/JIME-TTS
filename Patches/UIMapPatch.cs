@@ -27,7 +27,7 @@ namespace JIME_TTS_MOD.Patches
         }
 
 
-        protected new static void Prefix(MethodInfo __originalMethod, object __instance, object[] __args)
+        protected new static void Prefix(object __instance, object[] __args)
         {
 
             if (EventCoordinator.Instance == null)
@@ -36,31 +36,23 @@ namespace JIME_TTS_MOD.Patches
                 return;
             }
 
-            JIME_TTS.Log.LogInfo($"Executed method: {__originalMethod.Name}");
-
-
-
-
             if (__instance is UIMapScene uiMap && uiMap.gameObject != null)
             {
                 bool isEpilogueVisible = Traverse.Create(uiMap).Field("isEpilogueVisible").GetValue<bool>();
 
-                if (__originalMethod.Name == "OnContinueButtonClicked" && isEpilogueVisible)
+                if (isEpilogueVisible)
                 {
-                    JIME_TTS.Log.LogInfo($"Prefix: Sound not played, due to scene transistion");
+                    JIME_TTS.Log.LogInfo($"Prefix: Sound will not play due to scene transistion.");
                 }
                 else
                 {
-                    var gameObject = uiMap.gameObject;
-                    var isActive = gameObject.activeInHierarchy;
-                    var packet = uiMap.Label_AdventureEpilogue;
-                    EventCoordinator.Instance.RaiseUIMapExecuted(gameObject, isActive, uiMap, packet);
+                    EventCoordinator.Instance.RaiseUIMapExecuted(uiMap, uiMap.Label_AdventureEpilogue);
                 }
 
             }
             else
             {
-                JIME_TTS.Log.LogWarning($"Postfix: Instance is not UIMapScene or gameObject is null.");
+                JIME_TTS.Log.LogWarning($"Prefix: Instance is not UIMapScene or gameObject is null.");
             }
         }
 
@@ -74,11 +66,8 @@ namespace JIME_TTS_MOD.Patches
 
             if (__instance is UIMapScene uiMap && uiMap.gameObject != null)
             {
-            
-                var gameObject = uiMap.gameObject;
-                var isActive = gameObject.activeInHierarchy;
-                var packet = uiMap.Label_AdventureEpilogue;
-                EventCoordinator.Instance.RaiseUIMapExecuted(gameObject, isActive, uiMap, packet);
+        
+                EventCoordinator.Instance.RaiseUIMapExecuted(uiMap, uiMap.Label_AdventureEpilogue);
             
             }
             else

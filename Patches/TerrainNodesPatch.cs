@@ -4,6 +4,7 @@ using System.Reflection;
 using System;
 using FFG.JIME;
 
+
 namespace JIME_TTS_MOD.Patches
 {
     public class TerrainNodesPatch : BasePatch
@@ -27,7 +28,11 @@ namespace JIME_TTS_MOD.Patches
                 JIME_TTS.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
                 return;
             }
-            EventCoordinator.Instance.RaiseTerrainNodesExecuted(terrainNodes);
+            if (terrainNodes != null && terrainNodes.Length > 0)
+            {
+                EventCoordinator.Instance.RaiseTerrainNodesExecuted(terrainNodes);
+            }
+            
         }
     }
 }

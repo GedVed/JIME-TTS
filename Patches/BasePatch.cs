@@ -67,10 +67,6 @@ namespace JIME_TTS_MOD.Patches
                     PatchMethods(targetObject);
                     foundAnyTarget = true;
                 }
-                else
-                {
-                    //JIME_TTS.Log.LogInfo($"GameObject {gameObjectName} not found or lacks {TargetComponentType.Name} component for {GetType().Name}.");
-                }
             }
 
             if (foundAnyTarget)
@@ -159,7 +155,7 @@ namespace JIME_TTS_MOD.Patches
         {
             JIME_TTS.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
         }
-        protected static void Prefix(MethodInfo __methodInfo,object __instance, object[] __args)
+        protected static void Prefix(object __instance, object[] __args)
         {
             JIME_TTS.Log.LogWarning($"{nameof(BasePatch)}.Prefix called but not implemented.");
         }

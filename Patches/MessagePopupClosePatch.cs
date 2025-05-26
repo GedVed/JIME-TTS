@@ -30,8 +30,7 @@ namespace JIME_TTS_MOD.Patches
 
             if (__instance is MessagePopup messagePopup && messagePopup.gameObject != null)
             {
-                var isActive = messagePopup.gameObject.activeInHierarchy;
-                EventCoordinator.Instance.RaiseMessagePopupCloseExecuted(isActive, messagePopup);
+                EventCoordinator.Instance.RaiseMessagePopupCloseExecuted(messagePopup.gameObject.activeInHierarchy);
             }
             else
             {
