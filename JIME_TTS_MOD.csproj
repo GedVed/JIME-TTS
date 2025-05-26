@@ -22,7 +22,7 @@
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.48" IncludeAssets="compile" />
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(AssemblyCSharpPath)\Assembly-CSharp.dll</HintPath>
+      <HintPath>References\Assembly-CSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   
