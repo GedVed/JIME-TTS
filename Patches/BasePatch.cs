@@ -18,7 +18,7 @@ namespace JIME_TTS_MOD.Patches
         protected abstract string[] TargetGameObjectNames { get; }
         protected abstract Type TargetComponentType { get; }
         
-
+        protected abstract string PrefixMethod { get; }
         protected abstract List<string> TargetMethodNames { get; }
 
         // Properties for patching status and data
@@ -107,20 +107,41 @@ namespace JIME_TTS_MOD.Patches
 
                 try
                 {
-                    MethodNameMap[targetMethod] = methodName;
-                    var postfix = new HarmonyMethod(GetType().GetMethod(nameof(Postfix), BindingFlags.Static | BindingFlags.NonPublic));
-                    HarmonyInstance.Patch(targetMethod, postfix: postfix);
-
-                    var patchInfo = Harmony.GetPatchInfo(targetMethod);
-                    if (patchInfo?.Postfixes?.Any(p => p.owner == HarmonyInstance.Id) == true)
+                    if (methodName != PrefixMethod)
                     {
-                        PatchedMethods.Add(methodName);
-                        successfulPatches++;
-                        LogPatchSuccess(methodName, successfulPatches, TargetMethodNames.Count);
+                        MethodNameMap[targetMethod] = methodName;
+                        var postfix = new HarmonyMethod(GetType().GetMethod(nameof(Postfix), BindingFlags.Static | BindingFlags.NonPublic));
+                        HarmonyInstance.Patch(targetMethod, postfix: postfix);
+
+                        var patchInfo = Harmony.GetPatchInfo(targetMethod);
+                        if (patchInfo?.Postfixes?.Any(p => p.owner == HarmonyInstance.Id) == true)
+                        {
+                            PatchedMethods.Add(methodName);
+                            successfulPatches++;
+                            LogPatchSuccess(methodName + "_Postfix", successfulPatches, TargetMethodNames.Count);
+                        }
+                        else
+                        {
+                            LogPatchFailure(methodName);
+                        }
                     }
                     else
                     {
-                        LogPatchFailure(methodName);
+                        MethodNameMap[targetMethod] = methodName;
+                        var prefix = new HarmonyMethod(GetType().GetMethod(nameof(Prefix), BindingFlags.Static | BindingFlags.NonPublic));
+                        HarmonyInstance.Patch(targetMethod, prefix: prefix);
+
+                        var patchInfo = Harmony.GetPatchInfo(targetMethod);
+                        if (patchInfo?.Prefixes?.Any(p => p.owner == HarmonyInstance.Id) == true)
+                        {
+                            PatchedMethods.Add(methodName);
+                            successfulPatches++;
+                            LogPatchSuccess(methodName + "_Prefix", successfulPatches, TargetMethodNames.Count);
+                        }
+                        else
+                        {
+                            LogPatchFailure(methodName);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -138,8 +159,11 @@ namespace JIME_TTS_MOD.Patches
         {
             JIME_TTS.Log.LogWarning($"{nameof(BasePatch)}.Postfix called but not implemented.");
         }
-
-
+        protected static void Prefix(MethodInfo __methodInfo,object __instance, object[] __args)
+        {
+            JIME_TTS.Log.LogWarning($"{nameof(BasePatch)}.Prefix called but not implemented.");
+        }
+        
         protected void LogPatchSuccess(string methodName, int successfulPatches, int totalMethods)
         {
             JIME_TTS.Log.LogInfo($"Successfully patched method {methodName} in {TargetComponentType.Name}.");

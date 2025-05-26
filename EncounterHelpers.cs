@@ -154,6 +154,18 @@ public static class EncounterHelpers
                             filepaths.Add(firstInsert.RawText);
                         }
                         break;
+                        /*
+                    case "A2_OBJECTIVE_2":
+
+                        filepaths.Add("OBJECTIVE");
+                        filepaths.Add(packet.Key);
+                        break;
+*/
+                    case "A2_M1_INTRO":
+
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key);
+                        break;
 
                     case string s when s.Contains("ENEMIES"): //case "A1_M1_E1_ENEMIES":
 
@@ -166,10 +178,10 @@ public static class EncounterHelpers
                         EnemySpawn(packet, localizationText, filepaths, textPart);
 
                         break;
-
+                        //A2_OBJECTIVE_2
                     case string s when s.Contains("OBJECTIVE"):
 
-                        filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
                         RemoveBracket(filepaths);
                         if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(1) is { IsUsed: true } secondInsert)
                         {
@@ -330,7 +342,7 @@ public static class EncounterHelpers
         string numberStarting = filepaths.FirstOrDefault(s => s.Length > 0 && char.IsDigit(s[0]))
             ?? throw new InvalidOperationException("No string starting with a number found.");
 
-        // Find random text (not PLACE_TILE_NO_FLAVOR_1, PLACE_TILE_NO_FLAVOR_2, or number-starting)
+        
         string randomText = filepaths.FirstOrDefault(s => s != placeTile1 && s != placeTile2 && s != numberStarting)
             ?? throw new InvalidOperationException("No random text found.");
 
@@ -391,7 +403,7 @@ public static class EncounterHelpers
 
             case "A67_WITCH_KING_DROP_GOOD_PROMO":
             case "A67_WITCH_KING_DROP_BAD_PROMO":
-            case "A40_NALKA_SPAWN":
+            case "A40_NALKA_SPAWN": //Shadowed Paths
                 filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp).Concat(new[] { $"{packet.Key}_1" }));
                 break;
 

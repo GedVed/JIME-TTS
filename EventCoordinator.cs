@@ -3,6 +3,7 @@ using FFG.Common;
 using FFG.JIME;
 using UnityEngine;
 using JIME_TTS_MOD;
+using JIME_TTS_MOD.Patches;
 
 
 
@@ -19,10 +20,6 @@ public class EventCoordinator
     public event EventHandler<MessagePopupCloseExecutedEventArgs> MessagePopupCloseExecuted;
     public event EventHandler<UIMapExecutedEventArgs> UIMapExecuted;
     public event EventHandler<TerrainNodesEventArgs> TerrainNodesExecuted;
-
-
-
-
 
     public EventCoordinator(JIME_TTS plugin)
     {
@@ -61,7 +58,6 @@ public class EventCoordinator
         TerrainNodesExecuted?.Invoke(this, new TerrainNodesEventArgs(gameNodes));
         JIME_TTS.Log.LogInfo($"Terrain Nodes executed.");
     }
-
 
 
     public void WrapTerrainNodes(object sender, TerrainNodesEventArgs e)
@@ -186,5 +182,5 @@ public class TerrainNodesEventArgs : EventArgs
     {
         TerrainNodes = terrainNodes;
     }
-    
+
 }

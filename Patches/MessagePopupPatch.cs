@@ -1,5 +1,4 @@
 using HarmonyLib;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
@@ -21,15 +20,15 @@ namespace JIME_TTS_MOD.Patches
             "ShowPlayerSelectMessage",
             "ShowHighlightSelectMessage",
             };
-
             protected override string[] TargetGameObjectNames => ["MessagePopup_New"];
             protected override Type TargetComponentType => typeof(MessagePopup);
-            
+
+            protected override string PrefixMethod => null;
 
             public MessagePopupPatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
-                : base(methodNameMap, patchedMethods, harmony)
-            {
-            }
+            : base(methodNameMap, patchedMethods, harmony)
+        {
+        }
 
             protected new static void Postfix(object __instance, object[] __args)
             {

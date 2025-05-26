@@ -12,8 +12,8 @@ namespace JIME_TTS_MOD.Patches
         protected override List<string> TargetMethodNames => [ "CoroutineRevealTerrains" ];
         protected override string[] TargetGameObjectNames => [ "Adventure" ];
         protected override Type TargetComponentType => typeof(Adventure);
-        
 
+        protected override string PrefixMethod => null;
         public TerrainNodesPatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
             : base(methodNameMap, patchedMethods, harmony)
         {

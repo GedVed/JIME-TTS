@@ -19,36 +19,73 @@ namespace JIME_TTS_MOD.Patches
         ];
         protected override string[] TargetGameObjectNames => ["UI_Map"];
         protected override Type TargetComponentType => typeof(UIMapScene);
-        
 
+        protected override string PrefixMethod => "OnContinueButtonClicked";
         public UIMapPatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
             : base(methodNameMap, patchedMethods, harmony)
         {
         }
 
-        
-        protected new static void Postfix(object __instance, object[] __args)
+
+        protected new static void Prefix(MethodInfo __originalMethod, object __instance, object[] __args)
         {
-            
+
             if (EventCoordinator.Instance == null)
             {
                 JIME_TTS.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
                 return;
             }
 
-            
+            JIME_TTS.Log.LogInfo($"Executed method: {__originalMethod.Name}");
+
+
+
+
             if (__instance is UIMapScene uiMap && uiMap.gameObject != null)
             {
-                var gameObject = uiMap.gameObject;
-                var isActive = gameObject.activeInHierarchy;
-                var packet = uiMap.Label_AdventureEpilogue;
-                EventCoordinator.Instance.RaiseUIMapExecuted(gameObject, isActive, uiMap, packet);
-                
+                bool isEpilogueVisible = Traverse.Create(uiMap).Field("isEpilogueVisible").GetValue<bool>();
+
+                if (__originalMethod.Name == "OnContinueButtonClicked" && isEpilogueVisible)
+                {
+                    JIME_TTS.Log.LogInfo($"Prefix: Sound not played, due to scene transistion");
+                }
+                else
+                {
+                    var gameObject = uiMap.gameObject;
+                    var isActive = gameObject.activeInHierarchy;
+                    var packet = uiMap.Label_AdventureEpilogue;
+                    EventCoordinator.Instance.RaiseUIMapExecuted(gameObject, isActive, uiMap, packet);
+                }
+
             }
             else
             {
                 JIME_TTS.Log.LogWarning($"Postfix: Instance is not UIMapScene or gameObject is null.");
             }
+        }
+
+        protected new static void Postfix(object __instance, object[] __args)
+        {
+            if (EventCoordinator.Instance == null)
+            {
+                JIME_TTS.Log.LogWarning($"Postfix: EventCoordinator instance not found.");
+                return;
+            }
+
+            if (__instance is UIMapScene uiMap && uiMap.gameObject != null)
+            {
+            
+                var gameObject = uiMap.gameObject;
+                var isActive = gameObject.activeInHierarchy;
+                var packet = uiMap.Label_AdventureEpilogue;
+                EventCoordinator.Instance.RaiseUIMapExecuted(gameObject, isActive, uiMap, packet);
+            
+            }
+            else
+            {
+                JIME_TTS.Log.LogWarning($"Postfix: Instance is not UIMapScene or gameObject is null.");
+            }
+
         }
     }
 }
