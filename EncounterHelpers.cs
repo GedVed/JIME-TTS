@@ -16,8 +16,15 @@ public static class EncounterHelpers
             "ENEMY_HUNGRY_WARG_ACTIVATION","ENEMY_WIGHT_ACTIVATION","ENEMY_HILL_TROLL_ACTIVATION","ENEMY_ATARIN_ACTIVATION","ENEMY_ULUK_ACTIVATION","ENEMY_GULGOTAR_ACTIVATION",
             "ENEMY_GIANT_SPIDER_ACTIVATION","ENEMY_PIT_GOBLIN_ACTIVATION","ENEMY_ORC_TASKMASTER_ACTIVATION","ENEMY_SHADOWMAN_ACTIVATION","ENEMY_NAMELESS_THING_ACTIVATION",
             "ENEMY_CAVE_TROLL_ACTIVATION","ENEMY_UNGOLIANT_ACTIVATION","ENEMY_BALROG_ACTIVATION","ENEMY_SOLDIER_ACTIVATION","ENEMY_URUK_ACTIVATION","ENEMY_FELL_BEAST_ACTIVATION",
-            "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION"};
+            "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION", "A59_GIRANDAR_ACTIVATION", "ENEMY_URSA_ACTIVATION"};
 
+    private static readonly Dictionary<string, string> AdditionalEffectUnique = new Dictionary<string, string>
+    {
+        {"UI_ENEMY_ATTACK_ADDITIONAL_EFFECT","Po tym ataku każdy bohater, który nie przyjął karty obrażeń ani strachu, otrzymuje 1 żeton natchnienia"},
+        {"UI_ENEMY_ATTACK_ADDITIONAL_EFFECT_1","Przed tym atakiem każdy bohater odrzuca 2 karty z wierzchu swojej talii."},
+        {"UI_ENEMY_ATTACK_ADDITIONAL_EFFECT_2","Po tym ataku każdy bohater odrzuca 1 żeton natchnienia."},
+
+    };
 
     public static List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet, GameNode[] gameNodes = null)
     {
@@ -51,28 +58,7 @@ public static class EncounterHelpers
 
                 filepaths.Add(packet.Key);
 
-                if (EnemyActivations.Contains(packet.Key))
-                {
-                    string hero = FindHero(localizationText);
-                    if (!string.IsNullOrEmpty(hero))
-                    {
-                        filepaths.Insert(1, hero);
-                    }
-
-                    string attackKey = packet.Key == "ENEMY_BALROG_ACTIVATION"
-                        ? "ENEMY_ACTIVATION_ATTACK_BALROG"
-                        : "ENEMY_ACTIVATION_ATTACK";
-                    filepaths.Add(attackKey);
-                }
-                else
-                {
-
-                    var additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
-                    if (additionalInfo != null)
-                    {
-                        filepaths.Add(packet.Key.Replace("ATTACK", "ADDITIONAL"));
-                    }
-                }
+                AddAdditionalAttackInfo(packet, localizationText, filepaths);
 
                 break;
 
@@ -95,7 +81,7 @@ public static class EncounterHelpers
 
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
                         break;
-                    
+
                     case "UI_TERRAIN_NODES_REVEAL_FORMATTED":
 
                         if (gameNodes != null && gameNodes.Length >= 1)
@@ -122,6 +108,12 @@ public static class EncounterHelpers
                     case "UI_AWARD_ITEM_FORMATTED":
 
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
+                        break;
+
+                    case "UI_AWARD_MOUNT_FORMATTED":
+
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
                         break;
 
                     case "UI_ENEMY_REMOVAL_REMINDER_FORMATTED":
@@ -154,13 +146,204 @@ public static class EncounterHelpers
                             filepaths.Add(firstInsert.RawText);
                         }
                         break;
-                        /*
-                    case "A2_OBJECTIVE_2":
 
-                        filepaths.Add("OBJECTIVE");
-                        filepaths.Add(packet.Key);
+                    case "TRAVEL_MAP_INTRO":
+                    case "TRAVEL_MAP_STREAM":
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
                         break;
-*/
+                    case "A59_BAD_PROGRESS_1":
+                    case "A59_GOOD_PROGRESS_3":
+                    case "A59_BAD_PROGRESS_2":
+                    case "A59_OBJECTIVE_3":
+
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        FindIntInsert(localizationText, filepaths);
+                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
+                        break;
+                    
+
+                    case "A59_GOOD_PROGRESS_1":
+                    case "A59_OBJECTIVE_2A":
+                        List<int> insertsA59 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(insertsA59[0].ToString());
+                        filepaths.Add(packet.Key + "_1");
+                        filepaths.Add(insertsA59[1].ToString());
+                        filepaths.Add(packet.Key + "_2");
+                        break;
+
+                    case "A64_THREAT_2":
+
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        break;
+                    case "A64_THREAT_4A":
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        break;
+                    case "A64_THREAT_4B":
+                    
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key + "_1");
+                        break;
+                    case "TRAVEL_MAP_THREAT_2":
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key + "_1");
+                        break;
+                    case "case A58_THREAT_5":
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key + "_1");
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key + "_2");
+                        break;
+                    case "A58_THREAT_5_PASS":
+                    case "A58_THREAT_5_FAIL":
+                    case "A65_THREAT_2":
+                    case "A59_THREAT_4_DIV_COMPLETE_1":
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key + "_1");
+                        break;
+                    case "A57_EMPTY_TRACKER_2B":
+
+                        filepaths.Add(packet.Key);
+                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } secondInsertTokenPass)
+                        {
+                            filepaths.Add(secondInsertTokenPass.RawText);
+                        }
+                        break;
+
+                    case "TRAVEL_MAP_TOKEN_1_PASS":
+
+                        filepaths.Add(packet.Key);
+                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsertTokenPass)
+                        {
+                            filepaths.Add(firstInsertTokenPass.RawText);
+                        }
+                        filepaths.Add(packet.Key + "_1");
+                        break;
+
+                    case "CAM_5_TRAVEL_CHOICE_2":
+
+                        List<string> inserts = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
+
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        filepaths.Add(inserts[0]);
+                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
+                        filepaths.Add(inserts[1]);
+                        filepaths.Add(localizationText.KeyInfo.Key + "_2");
+                        filepaths.Add(inserts[0]);
+                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
+                        filepaths.Add(inserts[1]);
+                        break;
+                        //A60_DUNHARROW_CONFIRM
+                    case "A60_CROSSROADS_CONFIRM":
+                        List<string> inserts3 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(inserts3[0]);
+                        filepaths.Add(packet.Key + "_1");
+                        break;
+                    case  "A57_SWAP_MAP":
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key + "_1");
+                        break;
+                    
+                    case "A62_INTRO_4":
+
+                        List<int> inserts2 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        filepaths.Add(inserts2[0].ToString());
+                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
+                        filepaths.Add(inserts2[1].ToString());
+                        filepaths.Add(localizationText.KeyInfo.Key + "_2");
+                        break;
+
+                    case "A67_FELL_BEAST_TIMER_NO":
+                    case "A67_FELL_BEAST_TIMER_YES":
+                    case "A67_FELL_BEAST_TIMER":
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(packet.Key + "_1");
+                        break;
+
+                    case "A57_THREAT_1_TEST_2":
+                    case "A59_FELL_BEAST_CLOSER":
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
+                        break;
+                    case "A61_THREAT_1":
+
+                        string hero2 = FindHero(localizationText);
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        filepaths.Add(hero2);
+                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
+                        filepaths.Add(hero2);
+                        filepaths.Add(localizationText.KeyInfo.Key + "_2");
+                        break;
+
+                    case "A67_WITCH_KING_DEFEAT_1":
+                        List<string> inserts33 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.RawText).ToList();
+                        List<int> inserts34 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(inserts33[0]);
+                        filepaths.Add(packet.Key + "_1");
+                        filepaths.Add(inserts34[0].ToString());
+                        filepaths.Add(inserts34[0].ToString());
+                        filepaths.Add(packet.Key + "_2");
+                        
+            
+                        break;
+                    case "A62_SPIRITS_TIMER1":
+                    case "A57_THREAT_SKIPPED":
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(localizationText.KeyInfo.Key+ "_1");
+                        break;
+                    case "A35_TIMER_THREAT":
+                    case "A35_SPAWN_WIGHTS":
+
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
+                        break;
+
+                    case "A57_PLAYER_MOUNT":
+                    case "A57_SWAP_MAP_2":
+                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        break;
+
+                    case "A57_SWAP_SETUP":
+
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        FindIntInsert(localizationText, filepaths);
+                        break;
+
+                    case "A58_GATE_OBECTIVE_UPDATE":
+
+                        filepaths.Add(localizationText.KeyInfo.Key);
+                        FindIntInsert(localizationText, filepaths);
+                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
+                        break;
+                    case "A60_ENEMY_QUESTION_PASS_TRAITOR":
+
+                        List<string> insertsA60 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(insertsA60[0]);
+                        filepaths.Add(packet.Key + "_1");
+                        filepaths.Add(insertsA60[1].ToString());
+                        filepaths.Add(packet.Key + "_2");
+                        break;
+
                     case "A2_M1_INTRO":
 
                         filepaths.Add(FindHero(localizationText));
@@ -172,13 +355,12 @@ public static class EncounterHelpers
                         filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
                         RemoveBracket(filepaths);
                         break;
-
                     case string s when s.Contains("_SPAWN"):
 
                         EnemySpawn(packet, localizationText, filepaths, textPart);
 
                         break;
-                        //A2_OBJECTIVE_2
+                    //A2_OBJECTIVE_2
                     case string s when s.Contains("OBJECTIVE"):
 
                         filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
@@ -188,8 +370,8 @@ public static class EncounterHelpers
                             filepaths.Add(secondInsert.CompressedIntData.ToString());
                         }
                         break;
-                    //A35_TIMER_THREAT //[-1|-1|A35_TIMER_THREAT|1|8|0|A34_TWO|0] 
-                    //[-1|-1|A35_SPAWN_WIGHTS|1|8|0|A34_TWO|0]
+
+
                     default:
 
                         filepaths.Add(packet.Key);
@@ -205,7 +387,7 @@ public static class EncounterHelpers
         return filepaths;
     }
 
-   
+
 
 
     private static void EnemySpawn(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths, IEnumerable<string> textPart)
@@ -213,7 +395,7 @@ public static class EncounterHelpers
         string hero = FindHero(localizationText);
         if (!string.IsNullOrEmpty(hero))
         {
-            AudioQueueCorrectOrderEnemy(packet, hero, filepaths);
+            AudioQueueCorrectOrderEnemySpawn(packet, hero, filepaths);
         }
         else
         {
@@ -221,12 +403,62 @@ public static class EncounterHelpers
         }
     }
 
+    private static void AddAdditionalAttackInfo(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths)
+    {
+
+        if (EnemyActivations.Contains(packet.Key))
+        {
+            string hero = FindHero(localizationText);
+            if (!string.IsNullOrEmpty(hero))
+            {
+                filepaths.Insert(1, hero);
+            }
+
+            string attackKey = packet.Key == "ENEMY_BALROG_ACTIVATION"
+                ? "ENEMY_ACTIVATION_ATTACK_BALROG"
+                : "ENEMY_ACTIVATION_ATTACK";
+            filepaths.Add(attackKey);
+        }
+        else
+        {
+            switch (packet.Key)
+            {
+
+                case string s when s.Contains("ASSASSIN"):
+
+                    if (FindAdditionalAttackInfo())
+                    {
+                        filepaths.Add("A57_ASSASSIN_EXTRA");
+                    }
+                    break;
+
+                default:
+
+                    if (FindAdditionalAttackInfo())
+                    {
+                        filepaths.Add(packet.Key.Replace("ATTACK", "ADDITIONAL"));
+                    }
+                    break;
+            }
+        }
+    }
+
+
+    private static bool FindAdditionalAttackInfo()
+    {
+        var additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
+        if (additionalInfo != null)
+        {
+            return true;
+        }
+        return false;
+    }
+
     private static string FindHero(UILocalizationPacket localizationText)
     {
         if (localizationText?.KeyInfo?.UniqueArgCount > 0)
         {
-            var heroAttacked = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed)
-            .Select(insert => insert.CompressedIntData)
+            var heroAttacked = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData)
             .FirstOrDefault();
 
             if (heroAttacked.HasValue)
@@ -322,7 +554,6 @@ public static class EncounterHelpers
 
     private static void AudioQueueCorrectOrder(UILocalizationPacket localizationText, IEnumerable<string> textPart, List<string> filepaths)
     {
-
         var prefix = localizationText.KeyInfo.Key;
         var temp = textPart.ToList();
         temp.Remove(localizationText.KeyInfo.Key);
@@ -333,23 +564,23 @@ public static class EncounterHelpers
 
     private static List<string> AudioQueuePlaceTile(List<string> filepaths, int numberStartingIndex)
     {
-        
-        
+
+
         const string placeTile1 = "PLACE_TILE_NO_FLAVOR_1";
         const string placeTile2 = "PLACE_TILE_NO_FLAVOR_2";
 
-        
+
         string numberStarting = filepaths.FirstOrDefault(s => s.Length > 0 && char.IsDigit(s[0]))
             ?? throw new InvalidOperationException("No string starting with a number found.");
 
-        
+
         string randomText = filepaths.FirstOrDefault(s => s != placeTile1 && s != placeTile2 && s != numberStarting)
             ?? throw new InvalidOperationException("No random text found.");
 
-        
+
         var result = new List<string>();
 
-        
+
         int currentIndex = 0;
         result.Add(randomText); // First: random text
         currentIndex++;
@@ -373,8 +604,8 @@ public static class EncounterHelpers
 
         return result.Where(s => filepaths.Contains(s)).ToList();
     }
-    
-    private static void AudioQueueCorrectOrderEnemy(LocalizationPacket packet, string hero, List<string> filepaths)
+
+    private static void AudioQueueCorrectOrderEnemySpawn(LocalizationPacket packet, string hero, List<string> filepaths)
     {
 
         List<string> temp = [];
@@ -392,7 +623,7 @@ public static class EncounterHelpers
             //Spreading War
             case "A59_FELL_BEAST_SPAWN":
 
-                filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp));
+                filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(new[] { $"{packet.Key}_1" }).Concat(temp));
                 break;
 
             case "A67_WITCH_KING_DROP_GOOD":
@@ -412,6 +643,15 @@ public static class EncounterHelpers
                 temp.Add(hero);
                 filepaths.AddRange(new[] { $"{packet.Key}" }.Concat(temp).Concat(new[] { $"{packet.Key}_1" }).Concat(temp));
                 break;
+        }
+    }
+
+    private static void FindIntInsert(UILocalizationPacket localizationText, List<string> filepaths)
+    {
+        string value = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).FirstOrDefault().ToString();
+        if (!string.IsNullOrEmpty(value))
+        {
+            filepaths.Add(value);
         }
     }
 }
