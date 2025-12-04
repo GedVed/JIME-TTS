@@ -11,9 +11,11 @@ namespace JIME_TTS_MOD.Patches
         protected override List<string> TargetMethodNames => ["ClearCallbacks"];
 
         protected override string[] TargetGameObjectNames => ["MessagePopup_New"];
+
         protected override Type TargetComponentType => typeof(MessagePopup);
 
         protected override string PrefixMethod => null;
+
         public MessagePopupClosePatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
             : base(methodNameMap, patchedMethods, harmony)
         {

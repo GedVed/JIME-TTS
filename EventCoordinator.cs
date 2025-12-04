@@ -19,6 +19,7 @@ public class EventCoordinator
     public event EventHandler<MessagePopupMethodExecutedEventArgs> MessagePopupMethodExecuted;
     public event EventHandler<MessagePopupCloseExecutedEventArgs> MessagePopupCloseExecuted;
     public event EventHandler<UIMapExecutedEventArgs> UIMapExecuted;
+    public event EventHandler<EnemyDialogEventArgs> EnemyDialogExecuted;
     public event EventHandler<TerrainNodesEventArgs> TerrainNodesExecuted;
 
     public EventCoordinator(JIME_TTS plugin)
@@ -52,6 +53,13 @@ public class EventCoordinator
         UIMapExecuted?.Invoke(this, new UIMapExecutedEventArgs(uiMap, packet));
         JIME_TTS.Log.LogInfo($"UIMapExecuted invoked.");
     }
+
+    public void RaiseEnemyDialogExecuted(GameObject gameObject, EnemyInfoDialog instance, UILocalizationPacket packet)
+    {
+        EnemyDialogExecuted?.Invoke(this, new EnemyDialogEventArgs(gameObject, instance, packet));
+        JIME_TTS.Log.LogInfo($"EnemyDialog invoked.");
+    }
+
 
     public void RaiseTerrainNodesExecuted(GameNode[] gameNodes)
     {
@@ -127,8 +135,11 @@ public class MessagePopupMethodExecutedEventArgs : EventArgs
 {   
     
     public GameObject GameObject { get; }
+
     public bool IsActive { get; }
+
     public MessagePopup Instance { get; }
+
     public LocalizationPacket LocalizationPacket { get; }
 
     public GameNode[] GameNodes;
@@ -158,7 +169,8 @@ public class MessagePopupCloseExecutedEventArgs : EventArgs
 
 public class UIMapExecutedEventArgs : EventArgs
 {
-       public UIMapScene Instance { get; }
+    public UIMapScene Instance { get; }
+
     public UILocalizationPacket LocalizationPacket { get; }
 
     public UIMapExecutedEventArgs(UIMapScene instance, UILocalizationPacket packet)
@@ -166,9 +178,26 @@ public class UIMapExecutedEventArgs : EventArgs
 
         Instance = instance;
         LocalizationPacket = packet;
+
     }
 }
 
+public class EnemyDialogEventArgs: EventArgs
+{   
+    public GameObject GameObject { get; }
+
+    public EnemyInfoDialog Instance { get; }
+
+    public UILocalizationPacket LocalizationPacket { get; }
+
+    public EnemyDialogEventArgs(GameObject gameObject, EnemyInfoDialog instance, UILocalizationPacket packet)
+    {
+        GameObject = gameObject;
+        Instance = instance;
+        LocalizationPacket = packet;
+
+    }
+}
 
 public class TerrainNodesEventArgs : EventArgs
 {

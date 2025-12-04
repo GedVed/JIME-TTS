@@ -11,8 +11,9 @@ using FFG.JIME;
 namespace JIME_TTS_MOD.Patches
 {
     public abstract class BasePatch
-    {
-        protected static readonly float PatchTimeout = 3600f;
+    {   
+        //5minutes patch timeout
+        protected static readonly float PatchTimeout = 3600f;  
 
         // Abstract properties for patch-specific configuration
         protected abstract string[] TargetGameObjectNames { get; }
@@ -45,7 +46,7 @@ namespace JIME_TTS_MOD.Patches
         {
             if (IsPatched)
             {
-               // JIME_TTS.Log.LogInfo($"{GetType().Name} patching already completed, skipping attempt.");
+                //JIME_TTS.Log.LogInfo($"{GetType().Name} patching already completed, skipping attempt.");
                 return true;
             }
 
@@ -76,7 +77,7 @@ namespace JIME_TTS_MOD.Patches
                 return true;
             }
 
-           // JIME_TTS.Log.LogWarning($"No target GameObjects found for {GetType().Name}.");
+            //JIME_TTS.Log.LogWarning($"No target GameObjects found for {GetType().Name}.");
             return false;
         }
 

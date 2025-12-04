@@ -17,10 +17,13 @@ namespace JIME_TTS_MOD.Patches
         "OnRightButtonDetailedClick",
         "OnContinueButtonClicked"
         ];
+        
         protected override string[] TargetGameObjectNames => ["UI_Map"];
+
         protected override Type TargetComponentType => typeof(UIMapScene);
 
         protected override string PrefixMethod => "OnContinueButtonClicked";
+
         public UIMapPatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
             : base(methodNameMap, patchedMethods, harmony)
         {

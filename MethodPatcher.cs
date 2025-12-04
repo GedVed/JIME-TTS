@@ -30,6 +30,7 @@ public class MethodPatcher
             new MessagePopupPatch(MethodNameMap, PatchedMethods, Harmony),
             new MessagePopupClosePatch(MethodNameMap, PatchedMethods, Harmony),
             new UIMapPatch(MethodNameMap, PatchedMethods, Harmony),
+            new EnemyDialogPatch(MethodNameMap, PatchedMethods, Harmony)
 
         };
     }
@@ -37,7 +38,11 @@ public class MethodPatcher
     public static void Initialize(Harmony harmony, MonoBehaviour monoBehaviour)
     {
         var resolver = new MethodPatcher(harmony);
-        monoBehaviour.StartCoroutine(resolver.TryPatchMethods());
+        if(resolver != null)
+        {
+           monoBehaviour.StartCoroutine(resolver.TryPatchMethods()); 
+        }
+        
     }
 
     // Coroutine to retry patching until any GameObject is found or timeout

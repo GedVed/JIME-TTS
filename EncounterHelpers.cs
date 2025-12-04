@@ -26,6 +26,27 @@ public static class EncounterHelpers
 
     };
 
+    public static List<string> KeyInfoResolverDialog( UILocalizationPacket packet)
+    {
+
+        List<string> filepaths = [];
+
+        if(packet.key != null)
+        {
+            filepaths.Add(packet.key);
+            if (packet?.KeyInfo?.UniqueArgCount > 0)
+            {
+                var amount = packet.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData)
+                .FirstOrDefault();
+                JIME_TTS.Log.LogInfo($"Damage value from EnemyInfoDialog was {amount}");
+            }
+            return filepaths;
+        }
+
+        return null;
+    }
+        
+
     public static List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet, GameNode[] gameNodes = null)
     {
 

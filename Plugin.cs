@@ -39,15 +39,18 @@ namespace JIME_TTS_MOD
             GameObject audioObj = new GameObject("SoundPlayer");
             AudioSource = audioObj.AddComponent<AudioSource>();
             DontDestroyOnLoad(audioObj);
+
             //Harmony Patch
             MethodPatcher.Initialize(harmony, this);
             harmony.PatchAll();
+
             //Event Coordinator
             EventCoordinator.Initialize(this);
-            //Events
+            //Event subscription
             EventCoordinator.Instance.MessagePopupMethodExecuted += (sender, e) => EventCoordinator.Instance.WrapMessagePopup(sender, e, OnMessagePopupMethodExecuted);
             EventCoordinator.Instance.TerrainNodesExecuted += EventCoordinator.Instance.WrapTerrainNodes;
             EventCoordinator.Instance.MessagePopupCloseExecuted += OnMessagePopupClose;
+            EventCoordinator.Instance.EnemyDialogExecuted += OnEnemyDialogExecuted;
             EventCoordinator.Instance.UIMapExecuted += OnUIMapDisplayExecuted;
         
             Log.LogInfo("JIME_TTS Loaded!");
@@ -64,6 +67,7 @@ namespace JIME_TTS_MOD
                     EventCoordinator.Instance.MessagePopupCloseExecuted -= OnMessagePopupClose;
                     EventCoordinator.Instance.UIMapExecuted -= OnUIMapDisplayExecuted;
                     EventCoordinator.Instance.TerrainNodesExecuted -= EventCoordinator.Instance.WrapTerrainNodes;
+                    EventCoordinator.Instance.EnemyDialogExecuted -= OnEnemyDialogExecuted;
                 }
                 Instance = null;
             }
@@ -86,7 +90,6 @@ namespace JIME_TTS_MOD
 
         private void OnMessagePopupClose(object sender, MessagePopupCloseExecutedEventArgs e)
         {
-
             StopPlayback();
         }
 
@@ -110,6 +113,27 @@ namespace JIME_TTS_MOD
 
         }
 
+
+        private void OnEnemyDialogExecuted(object sender, EnemyDialogEventArgs e)
+        {
+
+            if (e.GameObject != null && e.Instance != null)
+            {
+                List<string> filepaths = EncounterHelpers.KeyInfoResolverDialog(e.LocalizationPacket);
+
+                if (filepaths.Count > 0)
+                {
+                    e.Instance.StartCoroutine(LoadAndPlayWrapper(new Queue<string>(filepaths)));
+
+                }
+                else
+                {
+                    Log.LogInfo("Unable to extract path from KeyInfo");
+                }
+            }
+
+        }
+
         private static IEnumerator LoadSound(Queue<string> filepaths)
         {
             if (!HasStartedLoading)
@@ -117,7 +141,7 @@ namespace JIME_TTS_MOD
                 foreach (string path in filepaths)
                 {
 
-                    Log.LogInfo($"{path}");
+                    Log.LogInfo($"Path in filepaths: {path}");
 
                     string filePath = Path.Combine(AudioFolder, path + ".wav");
 
@@ -160,7 +184,7 @@ namespace JIME_TTS_MOD
                 {
                     GameObject audioObj = new GameObject("SoundPlayer");
                     AudioSource = audioObj.AddComponent<AudioSource>();
-                    Log.LogInfo("AudioSource was null");
+                    Log.LogInfo("AudioSource was null, GameObject created");
                 }
 
                 AudioSource.clip = clip;
