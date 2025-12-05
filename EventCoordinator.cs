@@ -64,7 +64,7 @@ public class EventCoordinator
     public void RaiseTerrainNodesExecuted(GameNode[] gameNodes)
     {
         TerrainNodesExecuted?.Invoke(this, new TerrainNodesEventArgs(gameNodes));
-        JIME_TTS.Log.LogInfo($"Terrain Nodes executed.");
+        JIME_TTS.Log.LogInfo($"Terrain Nodes invoked.");
     }
 
 

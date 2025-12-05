@@ -1,10 +1,8 @@
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Linq;
 using System;
 using FFG.JIME;
-using FFG.Common;
 
 namespace JIME_TTS_MOD.Patches
 {
@@ -36,12 +34,15 @@ namespace JIME_TTS_MOD.Patches
             if (__instance is EnemyInfoDialog EnemyDialog && EnemyDialog.gameObject != null)
             {
                 var gameObject = EnemyDialog.gameObject;
+                //Reflection to get specific private property
                 var packet = typeof(EnemyInfoDialog).GetField("_labelConfirmationDialog", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(EnemyDialog) as UILocalizationPacket;
 
                 if(packet == null)
                 {
                     JIME_TTS.Log.LogInfo("EnemyInfoDialog unable to find UiLocalization packet");
-                }else{
+                }
+                else
+                {
                     EventCoordinator.Instance.RaiseEnemyDialogExecuted(gameObject, EnemyDialog, packet);
                 }
 
@@ -50,7 +51,7 @@ namespace JIME_TTS_MOD.Patches
             }
             else
             {
-                JIME_TTS.Log.LogWarning($"Postfix: Instance is not MessagePopup or gameObject is null.");
+                JIME_TTS.Log.LogWarning($"Postfix: Instance is not EnemyInfoDialog or gameObject is null.");
             } 
         }
     }

@@ -36,8 +36,7 @@ public static class EncounterHelpers
             filepaths.Add(packet.key);
             if (packet?.KeyInfo?.UniqueArgCount > 0)
             {
-                var amount = packet.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData)
-                .FirstOrDefault();
+                var amount = packet.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).FirstOrDefault();
                 JIME_TTS.Log.LogInfo($"Damage value from EnemyInfoDialog was {amount}");
             }
             return filepaths;
@@ -550,19 +549,22 @@ public static class EncounterHelpers
         filepaths.Add(localizationText.KeyInfo.Key);
 
         var countWithOrder = new List<(string Key, int Count)>();
-        var seenKeys = new HashSet<string>();
+        var seenKeys = new Dictionary<string, int>();
 
         foreach (var gameNode in gameNodes)
         {
             string key = gameNode.TerrainModel.NameKey;
-            if (seenKeys.Add(key)) // Add returns true if key is new
+
+            if (!seenKeys.TryGetValue(key, out int index)) 
             {
+                index = countWithOrder.Count;
+                seenKeys[key] = index;
                 countWithOrder.Add((key, 1));
             }
             else
             {
-                var index = countWithOrder.FindIndex(x => x.Key == key);
-                countWithOrder[index] = (key, countWithOrder[index].Count + 1);
+                var existingKey = countWithOrder[index];
+                countWithOrder[index] = (key, existingKey.Count + 1);
             }
         }
 
