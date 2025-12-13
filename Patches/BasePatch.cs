@@ -19,7 +19,7 @@ namespace JIME_TTS_MOD.Patches
         protected abstract string[] TargetGameObjectNames { get; }
         protected abstract Type TargetComponentType { get; }
         
-        protected abstract string PrefixMethod { get; }
+        protected abstract List<string> PrefixMethods { get; }
         protected abstract List<string> TargetMethodNames { get; }
 
         // Properties for patching status and data
@@ -104,7 +104,8 @@ namespace JIME_TTS_MOD.Patches
 
                 try
                 {
-                    if (methodName != PrefixMethod)
+                    //if (methodName != PrefixMethod)
+                    if(!PrefixMethods.Contains(methodName)) 
                     {
                         MethodNameMap[targetMethod] = methodName;
                         var postfix = new HarmonyMethod(GetType().GetMethod(nameof(Postfix), BindingFlags.Static | BindingFlags.NonPublic));

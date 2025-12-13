@@ -6,6 +6,7 @@ using System.Collections;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 
 
@@ -17,7 +18,7 @@ namespace JIME_TTS_MOD
     {
         public static ManualLogSource Log;
         private static AudioSource AudioSource;
-        private static readonly string AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS\\TTS");
+        private static string AudioFolder;
         private static bool IsPlayingQueue = false;
         private static readonly bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
@@ -36,7 +37,7 @@ namespace JIME_TTS_MOD
             var harmony = new Harmony("GedVed.JIME_TTS");
             Log = Logger;
             //AudioSource
-            GameObject audioObj = new GameObject("SoundPlayer");
+            GameObject audioObj = new GameObject("JIME_TTS_SoundPlayer");
             AudioSource = audioObj.AddComponent<AudioSource>();
             DontDestroyOnLoad(audioObj);
 
@@ -53,14 +54,18 @@ namespace JIME_TTS_MOD
             EventCoordinator.Instance.EnemyDialogExecuted += OnEnemyDialogExecuted;
             EventCoordinator.Instance.UIMapExecuted += OnUIMapDisplayExecuted;
         
+            FindOperatingSystem();
+
             Log.LogInfo("JIME_TTS Loaded!");
+            Log.LogInfo($"Loaded Path: {AudioFolder}");
+            
         }
 
         private void OnDestroy()
         {
+            
             if (Instance == this)
             {
-                Log.LogInfo("Destroying JIME_TTS instance.");
                 if (EventCoordinator.Instance != null)
                 {
                     EventCoordinator.Instance.MessagePopupMethodExecuted -= OnMessagePopupMethodExecuted;
@@ -69,7 +74,6 @@ namespace JIME_TTS_MOD
                     EventCoordinator.Instance.TerrainNodesExecuted -= EventCoordinator.Instance.WrapTerrainNodes;
                     EventCoordinator.Instance.EnemyDialogExecuted -= OnEnemyDialogExecuted;
                 }
-                Instance = null;
             }
         }
 
@@ -215,6 +219,22 @@ namespace JIME_TTS_MOD
                 IsPlayingQueue = false;
                 Log.LogInfo("Audio queue playback stopped");
             }
+        }
+
+        private void FindOperatingSystem()
+        {
+
+            if (RuntimeInformation.OSDescription.Contains("Windows"))
+            {
+                AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS\\TTS");
+            }
+            else
+            {
+                AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS/TTS");
+            }
+
+
+    
         }
 
     }
