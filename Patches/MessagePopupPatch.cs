@@ -23,7 +23,7 @@ namespace JIME_TTS_MOD.Patches
             protected override string[] TargetGameObjectNames => ["MessagePopup_New"];
             protected override Type TargetComponentType => typeof(MessagePopup);
 
-            protected override string PrefixMethod => null;
+            protected override List<string> PrefixMethods => [];
 
             public MessagePopupPatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
             : base(methodNameMap, patchedMethods, harmony)

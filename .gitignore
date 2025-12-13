@@ -44,3 +44,4 @@ Thumbs.db
 
 # Exclude personal dev paths
 Directory.Build.props
+/References

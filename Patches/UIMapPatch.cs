@@ -22,7 +22,7 @@ namespace JIME_TTS_MOD.Patches
 
         protected override Type TargetComponentType => typeof(UIMapScene);
 
-        protected override string PrefixMethod => "OnContinueButtonClicked";
+        protected override List<string> PrefixMethods => ["OnContinueButtonClicked"];
 
         public UIMapPatch(Dictionary<MethodInfo, string> methodNameMap, List<string> patchedMethods, Harmony harmony)
             : base(methodNameMap, patchedMethods, harmony)

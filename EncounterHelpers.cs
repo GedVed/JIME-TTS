@@ -33,11 +33,11 @@ public static class EncounterHelpers
 
         if(packet.key != null)
         {
-            filepaths.Add(packet.key);
+            
             if (packet?.KeyInfo?.UniqueArgCount > 0)
             {
-                var amount = packet.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).FirstOrDefault();
-                JIME_TTS.Log.LogInfo($"Damage value from EnemyInfoDialog was {amount}");
+                string amount = packet.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).FirstOrDefault();
+                filepaths.Add(packet.key + $"_{amount}");
             }
             return filepaths;
         }
@@ -63,10 +63,16 @@ public static class EncounterHelpers
         switch (MessagePopupObject.name)
         {
             case "MessagePopup_New":
+
+                
+
                 if (packet.Key == "UI_LAST_STAND_HERO_CONFIRMATION")
                 {
-                    filepaths = ValueCleaner(localizationText)
-                    .Where(text => text.StartsWith("UI_LAST_STAND") || text.StartsWith("HERO_")).ToList();
+                    /*
+                    filepaths.Add(packet.Key);
+                    filepaths.Add(FindHeroByIntByString(localizationText));
+                    */
+                    filepaths.Add(packet.Key + $"_{FindHeroByString(localizationText)}");
                 }
                 else
                 {
@@ -196,31 +202,31 @@ public static class EncounterHelpers
                     case "A64_THREAT_2":
 
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         break;
                     case "A64_THREAT_4A":
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         break;
                     case "A64_THREAT_4B":
                     
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_1");
                         break;
                     case "TRAVEL_MAP_THREAT_2":
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_1");
                         break;
                     case "case A58_THREAT_5":
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_1");
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_2");
                         break;
                     case "A58_THREAT_5_PASS":
@@ -228,7 +234,7 @@ public static class EncounterHelpers
                     case "A65_THREAT_2":
                     case "A59_THREAT_4_DIV_COMPLETE_1":
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_1");
                         break;
                     case "A57_EMPTY_TRACKER_2B":
@@ -272,7 +278,7 @@ public static class EncounterHelpers
                         break;
                     case  "A57_SWAP_MAP":
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_1");
                         break;
                     
@@ -290,19 +296,19 @@ public static class EncounterHelpers
                     case "A67_FELL_BEAST_TIMER_YES":
                     case "A67_FELL_BEAST_TIMER":
                         filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_1");
                         break;
 
                     case "A57_THREAT_1_TEST_2":
                     case "A59_FELL_BEAST_CLOSER":
                         filepaths.Add(localizationText.KeyInfo.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key + "_1");
                         break;
                     case "A61_THREAT_1":
 
-                        string hero2 = FindHero(localizationText);
+                        string hero2 = FindHeroByInt(localizationText);
                         filepaths.Add(localizationText.KeyInfo.Key);
                         filepaths.Add(hero2);
                         filepaths.Add(localizationText.KeyInfo.Key + "_1");
@@ -324,9 +330,9 @@ public static class EncounterHelpers
                         break;
                     case "A62_SPIRITS_TIMER1":
                     case "A57_THREAT_SKIPPED":
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key);
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key+ "_1");
                         break;
                     case "A35_TIMER_THREAT":
@@ -338,7 +344,7 @@ public static class EncounterHelpers
 
                     case "A57_PLAYER_MOUNT":
                     case "A57_SWAP_MAP_2":
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key);
                         break;
 
@@ -366,7 +372,7 @@ public static class EncounterHelpers
 
                     case "A2_M1_INTRO":
 
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key);
                         break;
 
@@ -412,7 +418,7 @@ public static class EncounterHelpers
 
     private static void EnemySpawn(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths, IEnumerable<string> textPart)
     {
-        string hero = FindHero(localizationText);
+        string hero = FindHeroByInt(localizationText);
         if (!string.IsNullOrEmpty(hero))
         {
             AudioQueueCorrectOrderEnemySpawn(packet, hero, filepaths);
@@ -428,7 +434,7 @@ public static class EncounterHelpers
 
         if (EnemyActivations.Contains(packet.Key))
         {
-            string hero = FindHero(localizationText);
+            string hero = FindHeroByInt(localizationText);
             if (!string.IsNullOrEmpty(hero))
             {
                 filepaths.Insert(1, hero);
@@ -474,7 +480,25 @@ public static class EncounterHelpers
         return false;
     }
 
-    private static string FindHero(UILocalizationPacket localizationText)
+    private static string FindHeroByString(UILocalizationPacket localizationText)
+    {
+        if (localizationText?.KeyInfo?.UniqueArgCount > 0)
+        {
+            string hero = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData)
+            .FirstOrDefault();
+
+            if(hero != null)
+            {
+                return hero;
+            }
+
+        }
+        return null;
+    }
+
+
+
+    private static string FindHeroByInt(UILocalizationPacket localizationText)
     {
         if (localizationText?.KeyInfo?.UniqueArgCount > 0)
         {
@@ -487,7 +511,7 @@ public static class EncounterHelpers
                 if (gameData != null)
                 {
                     Hero[] heroes = Traverse.Create(gameData).Field("_heroes").GetValue<Hero[]>();
-                    if (heroes != null && heroAttacked.Value < heroes.Length)
+                    if (heroes != null && heroAttacked.Value <= heroes.Length)
                     {
                         return heroes[heroAttacked.Value].Model.NameKey;
                     }
