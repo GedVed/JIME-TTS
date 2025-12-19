@@ -186,7 +186,7 @@ namespace JIME_TTS_MOD
                 AudioClip clip = AudioQueue.Dequeue();
                 if (AudioSource == null)
                 {
-                    GameObject audioObj = new GameObject("SoundPlayer");
+                    GameObject audioObj = new GameObject("JIME_TTS_SoundPlayer");
                     AudioSource = audioObj.AddComponent<AudioSource>();
                     Log.LogInfo("AudioSource was null, GameObject created");
                 }
@@ -232,9 +232,6 @@ namespace JIME_TTS_MOD
             {
                 AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS/TTS");
             }
-
-
-    
         }
 
     }
