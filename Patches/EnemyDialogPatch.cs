@@ -47,9 +47,6 @@ namespace JIME_TTS_MOD.Patches
                 {
                     EventCoordinator.Instance.RaiseEnemyDialogExecuted(gameObject, EnemyDialog, packet);
                 }
-
-                
-                
             }
             else
             {
