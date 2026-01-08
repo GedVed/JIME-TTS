@@ -372,7 +372,7 @@ public static class EncounterHelpers
                         break;
                     case "A62_SPIRITS_TIMER1":
                     case "A57_THREAT_SKIPPED":
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key);
                         filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key+ "_1");
@@ -380,7 +380,7 @@ public static class EncounterHelpers
                     
                     case "A57_PLAYER_MOUNT":
                     case "A57_SWAP_MAP_2":
-                        filepaths.Add(FindHero(localizationText));
+                        filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key);
                         break;
 
