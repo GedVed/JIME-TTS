@@ -7,6 +7,7 @@ using FFG.JIME;
 using System.Text.RegularExpressions;
 using System;
 using JIME_TTS_MOD;
+using System.IO;
 
 
 public static class EncounterHelpers
@@ -127,7 +128,11 @@ public static class EncounterHelpers
 
                     case "UI_AWARD_ITEM_FORMATTED":
 
-                        AudioQueueCorrectOrder(localizationText, textPart, filepaths);
+                        if (localizationText.KeyInfo.Inserts[0].IsUsed)
+                        {
+                            filepaths.Add(packet.Key + $"_{localizationText.KeyInfo.Inserts[0].CompressedStringData}");
+                        }
+                        
                         break;
 
                     case "UI_AWARD_MOUNT_FORMATTED":
@@ -172,25 +177,86 @@ public static class EncounterHelpers
                         filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
                         RemoveBracket(filepaths);
                         break;
-                    case "A59_BAD_PROGRESS_1":
+
+                    //Spreading War
+                    
+                    case "A59_GOOD_PROGRESS_1":
+                    case "A59_GOOD_PROGRESS_2":
+                    case "A59_OBJECTIVE_2A":
+                    case "A59_GOOD_PROGRESS_4":
+                    case "A59_GOOD_PROGRESS_5":
+                    case "A62_INTRO_4":
+
+                        List<int> insertsA59_GOOD1 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
+                        if(filepaths.Count == 2)
+                        {
+                            filepaths.Add(packet.Key + $"_{insertsA59_GOOD1[0]}_{insertsA59_GOOD1[1]}");
+                        }
+                        else
+                        {
+                            JIME_TTS.Log.LogError("Error in inserts of Spreading War.");
+                        }
+                        
+                        break;
+
                     case "A59_GOOD_PROGRESS_3":
+                    case "A59_BAD_PROGRESS_1":
                     case "A59_BAD_PROGRESS_2":
+                    case "A58_GATE_OBECTIVE_UPDATE":
+                    
+                        List<int> insertA59_GOOD = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
+                        if(insertA59_GOOD.Count == 1)
+                        {
+                            filepaths.Add(packet.Key + $"_{insertA59_GOOD[0]}");
+                        }
+                        break;
+
+                    case "A60_ENEMY_QUESTION_PASS_TRAITOR":
+
+                        List<string> insertsA60 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
+
+                        if(insertsA60.Count == 2)
+                        {
+                            filepaths.Add(packet.Key + $"_{insertsA60[0]}_{insertsA60[1]}");
+                        }
+                
+                        break;
+
+                    case "A60_CROSSROADS_CONFIRM":
+                        List<string> inserts3 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
+
+                        filepaths.Add(packet.Key + $"_{inserts3[0]}");
+
+                        break;
+                        
+                    case "A59_FELL_BEAST_CLOSER":
+                    case "A59_FELL_BEAST_SPAWN":
+                    case "A59_THREAT_2_DIV_COMPLETE":
+                    case "A59_THREAT_4_DIV_COMPLETE":
+                    case "A58_THREAT_5":
+                    case "A58_THREAT_5_PASS":
+                    case "A58_THREAT_5_FAIL":
+
+                        filepaths.Add(packet.Key + $"_{FindHero(localizationText)}");
+
+                        break;
+
+                    case "TRAVEL_MAP_TOKEN_1_PASS":
+
+                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsertTokenPass)
+                        {
+                            filepaths.Add(packet.Key + $"_{firstInsertTokenPass.RawText}");
+                        }
+                        
+                        break;
+
+
+
                     case "A59_OBJECTIVE_3":
 
                         filepaths.Add(localizationText.KeyInfo.Key);
                         FindIntInsert(localizationText, filepaths);
                         filepaths.Add(localizationText.KeyInfo.Key + "_1");
-                        break;
-                    
-
-                    case "A59_GOOD_PROGRESS_1":
-                    case "A59_OBJECTIVE_2A":
-                        List<int> insertsA59 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
-                        filepaths.Add(packet.Key);
-                        filepaths.Add(insertsA59[0].ToString());
-                        filepaths.Add(packet.Key + "_1");
-                        filepaths.Add(insertsA59[1].ToString());
-                        filepaths.Add(packet.Key + "_2");
                         break;
 
                     case "A64_THREAT_2":
@@ -216,15 +282,8 @@ public static class EncounterHelpers
                         filepaths.Add(FindHero(localizationText));
                         filepaths.Add(packet.Key + "_1");
                         break;
-                    case "case A58_THREAT_5":
-                        filepaths.Add(packet.Key);
-                        filepaths.Add(FindHero(localizationText));
-                        filepaths.Add(packet.Key + "_1");
-                        filepaths.Add(FindHero(localizationText));
-                        filepaths.Add(packet.Key + "_2");
-                        break;
-                    case "A58_THREAT_5_PASS":
-                    case "A58_THREAT_5_FAIL":
+                    
+                    
                     case "A65_THREAT_2":
                     case "A59_THREAT_4_DIV_COMPLETE_1":
                         filepaths.Add(packet.Key);
@@ -240,15 +299,7 @@ public static class EncounterHelpers
                         }
                         break;
 
-                    case "TRAVEL_MAP_TOKEN_1_PASS":
-
-                        filepaths.Add(packet.Key);
-                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsertTokenPass)
-                        {
-                            filepaths.Add(firstInsertTokenPass.RawText);
-                        }
-                        filepaths.Add(packet.Key + "_1");
-                        break;
+                    
 
                     case "CAM_5_TRAVEL_CHOICE_2":
 
@@ -264,28 +315,13 @@ public static class EncounterHelpers
                         filepaths.Add(inserts[1]);
                         break;
                         //A60_DUNHARROW_CONFIRM
-                    case "A60_CROSSROADS_CONFIRM":
-                        List<string> inserts3 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
-                        filepaths.Add(packet.Key);
-                        filepaths.Add(inserts3[0]);
-                        filepaths.Add(packet.Key + "_1");
-                        break;
+                    
                     case  "A57_SWAP_MAP":
                         filepaths.Add(packet.Key);
                         filepaths.Add(FindHero(localizationText));
                         filepaths.Add(packet.Key + "_1");
                         break;
                     
-                    case "A62_INTRO_4":
-
-                        List<int> inserts2 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedIntData).ToList();
-                        filepaths.Add(localizationText.KeyInfo.Key);
-                        filepaths.Add(inserts2[0].ToString());
-                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
-                        filepaths.Add(inserts2[1].ToString());
-                        filepaths.Add(localizationText.KeyInfo.Key + "_2");
-                        break;
-
                     case "A67_FELL_BEAST_TIMER_NO":
                     case "A67_FELL_BEAST_TIMER_YES":
                     case "A67_FELL_BEAST_TIMER":
@@ -295,7 +331,6 @@ public static class EncounterHelpers
                         break;
 
                     case "A57_THREAT_1_TEST_2":
-                    case "A59_FELL_BEAST_CLOSER":
                         filepaths.Add(localizationText.KeyInfo.Key);
                         filepaths.Add(FindHero(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key + "_1");
@@ -323,23 +358,17 @@ public static class EncounterHelpers
             
                         break;
                     case "A62_SPIRITS_TIMER1":
-                    case "A57_THREAT_SKIPPED":
+                    
                         filepaths.Add(FindHero(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key);
                         filepaths.Add(FindHero(localizationText));
                         filepaths.Add(localizationText.KeyInfo.Key+ "_1");
                         break;
-                    case "A35_TIMER_THREAT":
-                    case "A35_SPAWN_WIGHTS":
-
-                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
-                        RemoveBracket(filepaths);
-                        break;
-
+                    
                     case "A57_PLAYER_MOUNT":
                     case "A57_SWAP_MAP_2":
-                        filepaths.Add(FindHero(localizationText));
-                        filepaths.Add(localizationText.KeyInfo.Key);
+                    case "A57_THREAT_SKIPPED":
+                        filepaths.Add(packet.Key + $"_{FindHero(localizationText)}");
                         break;
 
                     case "A57_SWAP_SETUP":
@@ -348,20 +377,11 @@ public static class EncounterHelpers
                         FindIntInsert(localizationText, filepaths);
                         break;
 
-                    case "A58_GATE_OBECTIVE_UPDATE":
+                    case "A35_TIMER_THREAT":
+                    case "A35_SPAWN_WIGHTS":
 
-                        filepaths.Add(localizationText.KeyInfo.Key);
-                        FindIntInsert(localizationText, filepaths);
-                        filepaths.Add(localizationText.KeyInfo.Key + "_1");
-                        break;
-                    case "A60_ENEMY_QUESTION_PASS_TRAITOR":
-
-                        List<string> insertsA60 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
-                        filepaths.Add(packet.Key);
-                        filepaths.Add(insertsA60[0]);
-                        filepaths.Add(packet.Key + "_1");
-                        filepaths.Add(insertsA60[1].ToString());
-                        filepaths.Add(packet.Key + "_2");
+                        filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
+                        RemoveBracket(filepaths);
                         break;
 
                     case "A2_M1_INTRO":
@@ -487,7 +507,7 @@ public static class EncounterHelpers
                 if (gameData != null)
                 {
                     Hero[] heroes = Traverse.Create(gameData).Field("_heroes").GetValue<Hero[]>();
-                    if (heroes != null && heroAttacked.Value < heroes.Length)
+                    if (heroes != null && heroAttacked.Value <= heroes.Length)
                     {
                         return heroes[heroAttacked.Value].Model.NameKey;
                     }
