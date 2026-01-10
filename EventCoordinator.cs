@@ -3,7 +3,7 @@ using FFG.Common;
 using FFG.JIME;
 using UnityEngine;
 using JIME_TTS_MOD;
-using JIME_TTS_MOD.Patches;
+
 
 
 
@@ -105,20 +105,20 @@ public class EventCoordinator
 
                 if (terrainNodes != null && terrainNodes.Length > 0)
                 {
-                    // Updated event with terrain nodes
+                    //Updated event with terrain nodes
                     e = new MessagePopupMethodExecutedEventArgs(e.GameObject, e.IsActive, e.Instance, e.LocalizationPacket, terrainNodes);
                 }
                 else
                 {
                     JIME_TTS.Log.LogInfo("TerrainNodesExecuted not triggered or no nodes");
                 }
-                // Call the original handler with the updated event args
+                //Call the original handler with the updated event args
                 originalHandler(sender, e);
             }
             else
             {
-                JIME_TTS.Log.LogInfo("GameObject or Instance is null in MessagePopupMethodExecuted");
-                originalHandler(sender, e); // Call original handler
+                JIME_TTS.Log.LogInfo("Error in WrapMessagePopup on terrain nodes, calling original handler");
+                originalHandler(sender, e); //Call original handler
             }
         }
         catch (Exception ex)

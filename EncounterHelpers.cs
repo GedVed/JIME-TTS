@@ -7,7 +7,7 @@ using FFG.JIME;
 using System.Text.RegularExpressions;
 using System;
 using JIME_TTS_MOD;
-using System.IO;
+
 
 
 public static class EncounterHelpers
@@ -18,14 +18,6 @@ public static class EncounterHelpers
             "ENEMY_GIANT_SPIDER_ACTIVATION","ENEMY_PIT_GOBLIN_ACTIVATION","ENEMY_ORC_TASKMASTER_ACTIVATION","ENEMY_SHADOWMAN_ACTIVATION","ENEMY_NAMELESS_THING_ACTIVATION",
             "ENEMY_CAVE_TROLL_ACTIVATION","ENEMY_UNGOLIANT_ACTIVATION","ENEMY_BALROG_ACTIVATION","ENEMY_SOLDIER_ACTIVATION","ENEMY_URUK_ACTIVATION","ENEMY_FELL_BEAST_ACTIVATION",
             "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION", "A59_GIRANDAR_ACTIVATION", "ENEMY_URSA_ACTIVATION"};
-
-    private static readonly Dictionary<string, string> AdditionalEffectUnique = new Dictionary<string, string>
-    {
-        {"UI_ENEMY_ATTACK_ADDITIONAL_EFFECT","Po tym ataku każdy bohater, który nie przyjął karty obrażeń ani strachu, otrzymuje 1 żeton natchnienia"},
-        {"UI_ENEMY_ATTACK_ADDITIONAL_EFFECT_1","Przed tym atakiem każdy bohater odrzuca 2 karty z wierzchu swojej talii."},
-        {"UI_ENEMY_ATTACK_ADDITIONAL_EFFECT_2","Po tym ataku każdy bohater odrzuca 1 żeton natchnienia."},
-
-    };
 
     public static List<string> KeyInfoResolverDialog( UILocalizationPacket packet)
     {
@@ -217,6 +209,16 @@ public static class EncounterHelpers
                         }
                         break;
 
+                    case "TRAVEL_MAP_TOKEN_1_PASS":
+
+                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsertTokenPass)
+                        {
+                            filepaths.Add(packet.Key + $"_{firstInsertTokenPass.RawText}");
+                        }
+                        
+                        break;
+
+
                     case "A60_ENEMY_QUESTION_PASS_TRAITOR":
 
                         List<string> insertsA60 = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
@@ -243,18 +245,11 @@ public static class EncounterHelpers
                     case "A58_THREAT_5_PASS":
                     case "A58_THREAT_5_FAIL":
 
-                        filepaths.Add(packet.Key + $"_{FindHero(localizationText)}");
+                        filepaths.Add(packet.Key + $"_{FindHeroByInt(localizationText)}");
 
                         break;
 
-                    case "TRAVEL_MAP_TOKEN_1_PASS":
-
-                        if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsertTokenPass)
-                        {
-                            filepaths.Add(packet.Key + $"_{firstInsertTokenPass.RawText}");
-                        }
-                        
-                        break;
+                    
 
 
 
@@ -294,14 +289,6 @@ public static class EncounterHelpers
                         filepaths.Add(packet.Key + "_1");
                         filepaths.Add(FindHeroByInt(localizationText));
                         filepaths.Add(packet.Key + "_2");
-                        break;
-                    case "A58_THREAT_5_PASS":
-                    case "A58_THREAT_5_FAIL":
-                    case "A65_THREAT_2":
-                    case "A59_THREAT_4_DIV_COMPLETE_1":
-                        filepaths.Add(packet.Key);
-                        filepaths.Add(FindHeroByInt(localizationText));
-                        filepaths.Add(packet.Key + "_1");
                         break;
                     case "A57_EMPTY_TRACKER_2B":
 

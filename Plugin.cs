@@ -20,7 +20,7 @@ namespace JIME_TTS_MOD
         private static AudioSource AudioSource;
         private static string AudioFolder;
         private static bool IsPlayingQueue = false;
-        private static readonly bool HasStartedLoading = false;
+        private static bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
         private static JIME_TTS Instance;
         
@@ -36,6 +36,7 @@ namespace JIME_TTS_MOD
             Instance = this;
             var harmony = new Harmony("GedVed.JIME_TTS");
             Log = Logger;
+
             //AudioSource
             GameObject audioObj = new GameObject("JIME_TTS_SoundPlayer");
             AudioSource = audioObj.AddComponent<AudioSource>();
@@ -140,19 +141,24 @@ namespace JIME_TTS_MOD
 
         private static IEnumerator LoadSound(Queue<string> filepaths)
         {
-            if (!HasStartedLoading)
+            if(HasStartedLoading)
+                yield break;
+
+            HasStartedLoading = true;
+
+            foreach (string path in filepaths)
             {
-                foreach (string path in filepaths)
-                {
 
-                    Log.LogInfo($"Path in filepaths: {path}");
+                Log.LogInfo($"Path in filepaths: {path}");
 
-                    string filePath = Path.Combine(AudioFolder, path + ".wav");
+                string filePath = Path.Combine(AudioFolder, path + ".wav");
 
-                    if (File.Exists(filePath))
+
+                if (!File.Exists(filePath))
+                    continue;
+
+                    using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + filePath, AudioType.WAV))
                     {
-
-                        UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + filePath, AudioType.WAV);
                         yield return www.SendWebRequest();
 
                         if (www.result == UnityWebRequest.Result.Success)
@@ -166,35 +172,39 @@ namespace JIME_TTS_MOD
                             Log.LogError($"Failed to load audio file: {filePath}");
                             yield break;
                         }
+                
                     }
-                    else
-                    {
-                        Log.LogError($"Audio file for '{path}' not found at '{filePath}'");
-                    }
-
-
-                }
             }
+
+            HasStartedLoading = false;
+
         }
 
         private static IEnumerator PlayQueue()
         {
+            if (IsPlayingQueue)
+                yield break;
+
             IsPlayingQueue = true;
+
+            if (AudioSource == null)
+            {
+                GameObject audioObj = new GameObject("JIME_TTS_SoundPlayer");
+                AudioSource = audioObj.AddComponent<AudioSource>();
+                Log.LogInfo("AudioSource was null, GameObject created");
+            }
 
             while (AudioQueue.Count > 0)
             {
                 AudioClip clip = AudioQueue.Dequeue();
-                if (AudioSource == null)
-                {
-                    GameObject audioObj = new GameObject("JIME_TTS_SoundPlayer");
-                    AudioSource = audioObj.AddComponent<AudioSource>();
-                    Log.LogInfo("AudioSource was null, GameObject created");
-                }
+
+                if (clip == null)
+                    continue;
 
                 AudioSource.clip = clip;
                 AudioSource.Play();
 
-                yield return new WaitWhile(() => AudioSource.isPlaying);
+                yield return new WaitWhile(() => AudioSource != null && AudioSource.isPlaying);
             }
 
             IsPlayingQueue = false;
@@ -212,13 +222,15 @@ namespace JIME_TTS_MOD
 
         private static void StopPlayback()
         {
-            if (AudioSource != null && AudioSource.isPlaying)
+            AudioQueue.Clear();
+
+            if (AudioSource != null)
             {
                 AudioSource.Stop();
-                AudioQueue.Clear();
-                IsPlayingQueue = false;
-                Log.LogInfo("Audio queue playback stopped");
             }
+            IsPlayingQueue = false;
+            Log.LogInfo("Audio queue playback stopped");
+
         }
 
         private void FindOperatingSystem()
