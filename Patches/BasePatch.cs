@@ -12,7 +12,6 @@ namespace JIME_TTS_MOD.Patches
 {
     public abstract class BasePatch
     {   
-        //5minutes patch timeout
         protected static readonly float PatchTimeout = 3600f; //1hour patch time 
 
         // Abstract properties for patch-specific configuration
