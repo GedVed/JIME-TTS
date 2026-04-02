@@ -124,7 +124,7 @@ namespace JIME_TTS_MOD
 
             if (e.GameObject != null && e.Instance != null)
             {
-                List<string> filepaths = EncounterHelpers.KeyInfoResolverDialog(e.LocalizationPacket);
+                List<string> filepaths = EncounterHelpers.KeyInfoResolverCombatDialog(e.LocalizationPacket);
 
                 if (filepaths.Count > 0)
                 {
