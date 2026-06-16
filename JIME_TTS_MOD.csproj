@@ -24,6 +24,12 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>References\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="steam_api">
+      <HintPath>References\steam_api.dll</HintPath>
+    </Reference>
+    <Reference Include="com.rlabrecque.steamworks.net">
+    <HintPath>References\com.rlabrecque.steamworks.net.dll</HintPath>
+    </Reference>
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">

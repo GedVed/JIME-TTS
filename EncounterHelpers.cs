@@ -10,16 +10,17 @@ using JIME_TTS_MOD;
 
 
 
-public static class EncounterHelpers
+
+public class EncounterHelpers
 {
 
-    private static readonly List<string> EnemyActivations = new List<string>{"ENEMY_GOBLIN_ACTIVATION","ENEMY_RUFFIAN_ACTIVATION","ENEMY_ORC_MARAUDER_ACTIVATION","ENEMY_ORC_HUNTER_ACTIVATION",
+    private readonly List<string> EnemyActivations = new List<string>{"ENEMY_GOBLIN_ACTIVATION","ENEMY_RUFFIAN_ACTIVATION","ENEMY_ORC_MARAUDER_ACTIVATION","ENEMY_ORC_HUNTER_ACTIVATION",
             "ENEMY_HUNGRY_WARG_ACTIVATION","ENEMY_WIGHT_ACTIVATION","ENEMY_HILL_TROLL_ACTIVATION","ENEMY_ATARIN_ACTIVATION","ENEMY_ULUK_ACTIVATION","ENEMY_GULGOTAR_ACTIVATION",
             "ENEMY_GIANT_SPIDER_ACTIVATION","ENEMY_PIT_GOBLIN_ACTIVATION","ENEMY_ORC_TASKMASTER_ACTIVATION","ENEMY_SHADOWMAN_ACTIVATION","ENEMY_NAMELESS_THING_ACTIVATION",
             "ENEMY_CAVE_TROLL_ACTIVATION","ENEMY_UNGOLIANT_ACTIVATION","ENEMY_BALROG_ACTIVATION","ENEMY_SOLDIER_ACTIVATION","ENEMY_URUK_ACTIVATION","ENEMY_FELL_BEAST_ACTIVATION",
             "ENEMY_WARG_RIDER_ACTIVATION","ENEMY_SIEGE_ENGINE_ACTIVATION","ENEMY_OLIPHAUNT_ACTIVATION", "A59_GIRANDAR_ACTIVATION", "ENEMY_URSA_ACTIVATION"};
 
-    public static List<string> KeyInfoResolverCombatDialog(UILocalizationPacket packet)
+    public List<string> KeyInfoResolverCombatDialog(UILocalizationPacket packet)
     {
 
         List<string> filepaths = [];
@@ -39,7 +40,7 @@ public static class EncounterHelpers
     }
         
 
-    public static List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet, GameNode[] gameNodes = null)
+    public List<string> KeyInfoResolver(MessagePopup MessagePopupObject, LocalizationPacket packet, GameNode[] gameNodes = null)
     {
 
 
@@ -139,9 +140,14 @@ public static class EncounterHelpers
                         filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
                         RemoveBracket(filepaths);
                         break;
+                    
+                    
+
 
                     case "UI_AWARD_ITEM_FORMATTED":
-
+                    case "UI_AWARD_TITLE_CHOOSE_HERO":
+                    case "UI_AWARD_TITLE_FORMATTED":
+                    //case "UI_THREAT_INCREASE":
                         if (localizationText.KeyInfo.Inserts[0].IsUsed)
                         {
                             filepaths.Add(packet.Key + $"_{localizationText.KeyInfo.Inserts[0].CompressedStringData}");
@@ -157,27 +163,54 @@ public static class EncounterHelpers
 
                     case "UI_ENEMY_REMOVAL_REMINDER_FORMATTED":
 
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(localizationText.KeyInfo.Inserts[0].CompressedStringData);
+                        filepaths.InsertRange(2, FindEnemyGroup(filepaths, localizationText));
+                        if (localizationText.KeyInfo.Inserts[2].IsUsed)
+                        {
+                            filepaths.Add(localizationText.KeyInfo.Inserts[2].CompressedStringData);
+                        }
+                        /*
                         filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
                         filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
                         RemoveBracket(filepaths);
                         filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
+                        */
                         break;
+                        
                     case "UI_ENEMY_REMOVAL_UNIQUE_REMINDER_FORMATTED":
+                        
+                        filepaths.Add(packet.Key);
+                        filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
+                        if (localizationText.KeyInfo.Inserts[2].IsUsed)
+                        {
+                            filepaths.Add(localizationText.KeyInfo.Inserts[2].CompressedStringData);
+                        }
+                        /*
                         filepaths = textPart.OrderBy(text => text != localizationText.KeyInfo.Key).ToList();
                         filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
                         RemoveBracket(filepaths);
                         filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
+                        */
                         break;
                     case "UI_SPAWN_GROUP_FORMAT":
-
+                        
+                        filepaths.Add(packet.Key + "_1");
+                        filepaths.Add(localizationText.KeyInfo.Inserts[0].CompressedStringData);
+                        filepaths.InsertRange(2, FindEnemyGroup(filepaths, localizationText));
+                        filepaths.Add(packet.Key + "_2");
+                        /*
                         AudioQueueCorrectOrder(localizationText, textPart, filepaths);
                         filepaths.RemoveAll(s => s == null || s.Any(c => char.IsLetter(c) && !char.IsUpper(c)));
                         RemoveBracket(filepaths);
                         filepaths.InsertRange(1, FindEnemyGroup(filepaths, localizationText));
+                        */
+                        
                         break;
 
                     case "UI_THREAT_INCREASE":
 
+                        
                         filepaths = textPart.OrderBy(text => text == localizationText.KeyInfo.Key).ToList();
                         RemoveBracket(filepaths);
                         if (localizationText?.KeyInfo?.Inserts?.ElementAtOrDefault(0) is { IsUsed: true } firstInsert)
@@ -396,12 +429,32 @@ public static class EncounterHelpers
                         break;
 
 
+                    //Broken Promise
+
+
+                    case "A68_THREAT_4_FOE":
+                    case "NEW_RULE":
+                        inserts = localizationText.KeyInfo.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert.CompressedStringData).ToList();
+                        filepaths.Add(packet.Key);
+                        filepaths.Add(inserts[0]);
+                    break;
+
+                    case "A69_OBJECTIVE_2_SET":
+                        filepaths.Add(packet.Key);
+                        break;
+                    case "A69_OBJECTIVE_2":
+                    case "A71_OBJECTIVE_REPEAT":
+                    case "A71_PLOT_SEARCH_2_PASS":
+                        filepaths.Add(packet.Key + $"_{localizationText.KeyInfo.Inserts[0].CompressedIntData}");
+                        break;
+
                     default:
 
                         filepaths.Add(packet.Key);
                         break;
                 }
                 break;
+
 
             default:
                 JIME_TTS.Log.LogError("MessagePopupObject does not exists or is invalid");
@@ -414,7 +467,7 @@ public static class EncounterHelpers
 
 
 
-    private static void EnemySpawn(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths, IEnumerable<string> textPart)
+    private void EnemySpawn(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths, IEnumerable<string> textPart)
     {
         string hero = FindHeroByInt(localizationText);
         if (!string.IsNullOrEmpty(hero))
@@ -427,7 +480,7 @@ public static class EncounterHelpers
         }
     }
 
-    private static void AddAdditionalAttackInfo(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths)
+    private void AddAdditionalAttackInfo(LocalizationPacket packet, UILocalizationPacket localizationText, List<string> filepaths)
     {
 
         if (EnemyActivations.Contains(packet.Key))
@@ -468,7 +521,7 @@ public static class EncounterHelpers
     }
 
 
-    private static bool FindAdditionalAttackInfo()
+    private bool FindAdditionalAttackInfo()
     {
         var additionalInfo = GameObject.Find("Label_Attack_AdditionalEffect");
         if (additionalInfo != null)
@@ -478,7 +531,7 @@ public static class EncounterHelpers
         return false;
     }
 
-    private static string FindHeroByString(UILocalizationPacket localizationText)
+    private string FindHeroByString(UILocalizationPacket localizationText)
     {
         if (localizationText?.KeyInfo?.UniqueArgCount > 0)
         {
@@ -496,7 +549,7 @@ public static class EncounterHelpers
 
 
 
-    private static string FindHeroByInt(UILocalizationPacket localizationText)
+    private string FindHeroByInt(UILocalizationPacket localizationText)
     {
         if (localizationText?.KeyInfo?.UniqueArgCount > 0)
         {
@@ -519,7 +572,7 @@ public static class EncounterHelpers
         return null;
     }
 
-    private static IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket)
+    private IEnumerable<string> ValueCleaner(UILocalizationPacket localizationPacket)
     {
 
         if (localizationPacket != null)
@@ -535,7 +588,7 @@ public static class EncounterHelpers
 
     }
 
-    private static void RemoveBracket(List<string> strings)
+    private void RemoveBracket(List<string> strings)
     {
 
         if (strings.Contains("0]"))
@@ -545,12 +598,11 @@ public static class EncounterHelpers
 
     }
 
-    private static IEnumerable<string> FindEnemyGroup(List<string> filepaths, UILocalizationPacket localizationText)
+    private IEnumerable<string> FindEnemyGroup(List<string> filepaths, UILocalizationPacket localizationText)
     {
 
         var enemyGroup = localizationText?.KeyInfo?.Inserts?.Where(insert => insert.IsUsed).Select(insert => insert switch
         {
-            { RawText: not null } when !string.IsNullOrEmpty(insert.RawText) => insert.RawText,
             { EnemyGroup.Model: not null } when filepaths.Count > 1 && int.TryParse(filepaths[1], out int count) && count > 1 => insert.EnemyGroup.Model.KeyPlural,
             { EnemyGroup.Model: not null } => insert.EnemyGroup.Model.KeySingular,
             _ => null
@@ -566,7 +618,7 @@ public static class EncounterHelpers
 
     }
 
-    private static void AudioQueueSpawnTerrain(UILocalizationPacket localizationText, GameNode[] gameNodes, List<string> filepaths)
+    private void AudioQueueSpawnTerrain(UILocalizationPacket localizationText, GameNode[] gameNodes, List<string> filepaths)
     {
         filepaths.Add(localizationText.KeyInfo.Key);
 
@@ -597,7 +649,7 @@ public static class EncounterHelpers
         }
     }
 
-    private static void AudioQueueCorrectOrder(UILocalizationPacket localizationText, IEnumerable<string> textPart, List<string> filepaths)
+    private void AudioQueueCorrectOrder(UILocalizationPacket localizationText, IEnumerable<string> textPart, List<string> filepaths)
     {
         var prefix = localizationText.KeyInfo.Key;
         var temp = textPart.ToList();
@@ -607,7 +659,7 @@ public static class EncounterHelpers
 
     }
 
-    private static List<string> AudioQueuePlaceTile(List<string> filepaths, int numberStartingIndex)
+    private List<string> AudioQueuePlaceTile(List<string> filepaths, int numberStartingIndex)
     {
 
 
@@ -650,7 +702,7 @@ public static class EncounterHelpers
         return result.Where(s => filepaths.Contains(s)).ToList();
     }
 
-    private static void AudioQueueCorrectOrderEnemySpawn(LocalizationPacket packet, string hero, List<string> filepaths)
+    private void AudioQueueCorrectOrderEnemySpawn(LocalizationPacket packet, string hero, List<string> filepaths)
     {
 
         List<string> temp = [];

@@ -7,7 +7,7 @@ using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-
+using Steamworks;
 
 
 namespace JIME_TTS_MOD
@@ -18,12 +18,14 @@ namespace JIME_TTS_MOD
     {
         public static ManualLogSource Log;
         private static AudioSource AudioSource;
+
         private static string AudioFolder;
         private static bool IsPlayingQueue = false;
         private static bool HasStartedLoading = false;
         private static Queue<AudioClip> AudioQueue = [];
         private static JIME_TTS Instance;
         
+        private static EncounterHelpers EncounterHelpers;
 
         void Awake()
         {
@@ -35,6 +37,7 @@ namespace JIME_TTS_MOD
             }
             Instance = this;
             var harmony = new Harmony("GedVed.JIME_TTS");
+            EncounterHelpers = new EncounterHelpers();
             Log = Logger;
 
             //AudioSource
@@ -56,7 +59,7 @@ namespace JIME_TTS_MOD
             EventCoordinator.Instance.UIMapExecuted += OnUIMapDisplayExecuted;
         
             FindOperatingSystem();
-
+            //FindSteamLibrary();
             Log.LogInfo("JIME_TTS Loaded!");
             Log.LogInfo($"Loaded Path: {AudioFolder}");
             
@@ -84,7 +87,7 @@ namespace JIME_TTS_MOD
             StopPlayback();
             if (!string.IsNullOrEmpty(e.LocalizationPacket?.key))
             {
-                e.Instance?.StartCoroutine(LoadAndPlayWrapper(new Queue<string>(new[] { e.LocalizationPacket.key })));
+                e.Instance?.StartCoroutine(LoadAndPlayWrapper(new Queue<string>([e.LocalizationPacket.key])));
             }
             else
             {
@@ -100,7 +103,7 @@ namespace JIME_TTS_MOD
 
         private void OnMessagePopupMethodExecuted(object sender, MessagePopupMethodExecutedEventArgs e)
         {
-
+                
             if (e.GameObject != null && e.Instance != null)
             {
                 List<string> filepaths = EncounterHelpers.KeyInfoResolver(e.Instance, e.LocalizationPacket, e.GameNodes);
@@ -244,6 +247,17 @@ namespace JIME_TTS_MOD
             {
                 AudioFolder = Path.Combine(Paths.PluginPath, "JIME_TTS/TTS");
             }
+        }
+
+        private void FindSteamLibrary()
+        {
+            if (!SteamManager.Initialized)
+        {
+            return;
+        }
+
+        uint libraryFolders = SteamApps.GetAppInstallDir(new AppId_t(1003400) , out string installDir, 4096);
+        Log.LogInfo(libraryFolders.ToString());
         }
 
     }
